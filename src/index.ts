@@ -1,3 +1,14 @@
-export { OOMap } from './OOMap/class.js'
-export { OOMapError } from './.errors/class.js'
-export type { OOMapSnapshot, OOMapState } from './.types/index.js'
+export { OOStruct } from './OOStruct/class.js'
+export { OOStructError } from './.errors/class.js'
+export type {
+  OOStructDelta,
+  OOStructEventListener,
+  OOStructEventListenerFor,
+  OOStructEventMap,
+  OOStructKey,
+  OOStructMergeResult,
+  OOStructSnapshot,
+  OOStructSnapshotEntry,
+  OOStructState,
+  OOStructStateEntry,
+} from './.types/index.js'

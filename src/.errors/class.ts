@@ -1,12 +1,12 @@
-export type OOMapErrorCode = 'BAD_SNAPSHOT'
+export type OOStructErrorCode = 'BAD_SNAPSHOT'
 
-export class OOMapError extends Error {
-  readonly code: OOMapErrorCode
+export class OOStructError extends Error {
+  readonly code: OOStructErrorCode
 
-  constructor(code: OOMapErrorCode, message?: string) {
+  constructor(code: OOStructErrorCode, message?: string) {
     const detail = message ?? code
-    super(`{@sovereignbase/observed-overwrite-map} ${detail}`)
+    super(`{@sovereignbase/observed-overwrite-struct} ${detail}`)
     this.code = code
-    this.name = 'OOMapError'
+    this.name = 'OOStructError'
   }
 }

@@ -1,11 +1,11 @@
-[![npm version](https://img.shields.io/npm/v/@sovereignbase/observed-overwrite-map)](https://www.npmjs.com/package/@sovereignbase/observed-overwrite-map)
-[![CI](https://github.com/sovereignbase/observed-overwrite-map/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/observed-overwrite-map/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/sovereignbase/observed-overwrite-map/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/observed-overwrite-map)
-[![license](https://img.shields.io/npm/l/@sovereignbase/observed-overwrite-map)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/@sovereignbase/observed-overwrite-struct)](https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct)
+[![CI](https://github.com/sovereignbase/observed-overwrite-struct/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/observed-overwrite-struct/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/sovereignbase/observed-overwrite-struct/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/observed-overwrite-struct)
+[![license](https://img.shields.io/npm/l/@sovereignbase/observed-overwrite-struct)](LICENSE)
 
 1. Title
 
-# observed-overwrite-map
+# observed-overwrite-struct
 
 2. Description
 
@@ -640,7 +640,7 @@ All failures are explicit and semantic. Errors are instances of `ZKCredentialErr
 
 Suite: unit + integration (Node), E2E (Playwright)
 Matrix: Chromium / Firefox / WebKit + mobile emulation (Pixel 5, iPhone 12)
-Coverage: c8 — 100% statements/branches/functions/lines (dist via source maps)
+Coverage: c8 — 100% statements/branches/functions/lines (dist via source structs)
 
 ## Benchmarks
 
