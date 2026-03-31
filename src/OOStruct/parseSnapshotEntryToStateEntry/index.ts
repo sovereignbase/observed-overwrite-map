@@ -2,7 +2,7 @@ import type {
   OOStructSnapshotEntry,
   OOStructStateEntry,
 } from '../../.types/index.js'
-import { isUuidV7 } from '../isUuidV7/index.js'
+import { isUuidV7, prototype } from '@sovereignbase/utils'
 export function parseSnapshotEntryToStateEntry<V>(
   defaultValue: V,
   snapshotEntry: OOStructSnapshotEntry<V>
@@ -17,7 +17,7 @@ export function parseSnapshotEntryToStateEntry<V>(
       continue
     overwrites.add(overwrite)
   }
-  const typeMatch = typeof snapshotEntry.__value === typeof defaultValue
+  const typeMatch = prototype(snapshotEntry.__value) === prototype(defaultValue)
   if (
     !isUuidV7(snapshotEntry.__uuidv7) ||
     !typeMatch ||
