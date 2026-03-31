@@ -7,6 +7,7 @@ export function parseSnapshotEntryToStateEntry<V>(
   defaultValue: V,
   snapshotEntry: OOStructSnapshotEntry<V>
 ): OOStructStateEntry<V> | false {
+  if (prototype(snapshotEntry) !== 'record') return false
   const overwrites = new Set<string>([])
   for (const overwrite of snapshotEntry.__overwrites) {
     if (
