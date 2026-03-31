@@ -78,7 +78,7 @@ export class OOStruct<T extends object> {
     const delta: OOStructDelta<T> = {}
     const changes: OOStructChanges<T> = {}
 
-    if (key) {
+    if (key !== undefined) {
       if (!Object.hasOwn(this.__defaults, key)) return
       const value = this.__defaults[key]
       delta[key] = this.overwriteAndReturnSnapshotEntry(key, value)

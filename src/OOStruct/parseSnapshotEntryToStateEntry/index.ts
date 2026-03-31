@@ -7,7 +7,16 @@ export function parseSnapshotEntryToStateEntry<V>(
   defaultValue: V,
   snapshotEntry: OOStructSnapshotEntry<V>
 ): OOStructStateEntry<V> | false {
-  if (prototype(snapshotEntry) !== 'record') return false
+  if (
+    prototype(snapshotEntry) !== 'record' ||
+    !Object.hasOwn(snapshotEntry, '__value') ||
+    !isUuidV7(snapshotEntry.__uuidv7) ||
+    !isUuidV7(snapshotEntry.__after) ||
+    !Array.isArray(snapshotEntry.__overwrites) ||
+    prototype(snapshotEntry.__value) !== prototype(defaultValue)
+  )
+    return false
+
   const overwrites = new Set<string>([])
   for (const overwrite of snapshotEntry.__overwrites) {
     if (
@@ -18,14 +27,9 @@ export function parseSnapshotEntryToStateEntry<V>(
       continue
     overwrites.add(overwrite)
   }
-  const typeMatch = prototype(snapshotEntry.__value) === prototype(defaultValue)
-  if (
-    !isUuidV7(snapshotEntry.__uuidv7) ||
-    !typeMatch ||
-    !isUuidV7(snapshotEntry.__after) ||
-    !overwrites.has(snapshotEntry.__after)
-  )
-    return false
+
+  if (!overwrites.has(snapshotEntry.__after)) return false
+
   return {
     __uuidv7: snapshotEntry.__uuidv7,
     __value: snapshotEntry.__value,
