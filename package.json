@@ -5,6 +5,14 @@
   "version": "0.0.0",
   "description": "",
   "keywords": [
+    "crdt",
+    "observed-overwrite-struct",
+    "oo-struct",
+    "uuidv7",
+    "lww",
+    "or-map",
+    "delta",
+    "snapshot",
     "typescript",
     "sovereignbase"
   ],
@@ -62,7 +70,7 @@
     "prettier": "^3.8.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "wrangler": "^4.78.0"
+    "wrangler": "^4.79.0"
   },
   "dependencies": {
     "@sovereignbase/utils": "^1.0.0",

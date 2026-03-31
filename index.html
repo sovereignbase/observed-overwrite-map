@@ -3,76 +3,76 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Observed Overwrite Struct CRDT Specification</title>
+    <title>Observed Overwrite Struct (OO-Struct) CRDT Specification</title>
     <meta
       name="description"
-      content="Specification and reference JavaScript binding for a UUIDv7-optimized observed-remove set (OR-Set), including delta, merge, snapshot, and tombstone garbage-collection guidance."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
     />
     <meta
       name="keywords"
-      content="uuidv7, observed-remove set, or-set, CRDT, tombstones, replication, merge, delta, snapshot, JavaScript, TypeScript"
+      content="observed overwrite struct, oo-struct, crdt, uuidv7, replication, delta, snapshot, lww, or-map, javascript, typescript"
     />
     <meta name="author" content="Jori Lehtinen" />
     <meta
       name="robots"
       content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     />
-    <meta name="application-name" content="observed-remove-set" />
+    <meta name="application-name" content="observed-overwrite-struct" />
     <link
       rel="canonical"
-      href="https://sovereignbase.github.io/observed-remove-set/"
+      href="https://sovereignbase.github.io/observed-overwrite-struct/"
     />
     <link
       rel="icon"
       type="image/png"
-      href="https://sovereignbase.github.io/observed-remove-set/sovereignbase_logo.png"
+      href="https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_logo.png"
     />
     <link
       rel="apple-touch-icon"
-      href="https://sovereignbase.github.io/observed-remove-set/sovereignbase_logo.png"
+      href="https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_logo.png"
     />
     <meta property="og:type" content="article" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="Sovereignbase" />
     <meta
       property="og:title"
-      content="Observed Overwrite Struct CRDT Specification"
+      content="Observed Overwrite Struct (OO-Struct) CRDT Specification"
     />
     <meta
       property="og:description"
-      content="Specification and reference JavaScript binding for a UUIDv7-optimized observed-remove set (OR-Set), including delta, merge, snapshot, and tombstone garbage-collection guidance."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
     />
     <meta
       property="og:url"
-      content="https://sovereignbase.github.io/observed-remove-set/"
+      content="https://sovereignbase.github.io/observed-overwrite-struct/"
     />
     <meta
       property="og:image"
-      content="https://sovereignbase.github.io/observed-remove-set/sovereignbase_social_sharing_image.png"
+      content="https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png"
     />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Sovereignbase social sharing image for the UUIDv7 observed-remove set specification."
+      content="Sovereignbase social sharing image for the observed overwrite struct specification."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Observed Overwrite Struct CRDT Specification"
+      content="Observed Overwrite Struct (OO-Struct) CRDT Specification"
     />
     <meta
       name="twitter:description"
-      content="Specification and reference JavaScript binding for a UUIDv7-optimized observed-remove set (OR-Set), including delta, merge, snapshot, and tombstone garbage-collection guidance."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
     />
     <meta
       name="twitter:image"
-      content="https://sovereignbase.github.io/observed-remove-set/sovereignbase_social_sharing_image.png"
+      content="https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png"
     />
     <meta
       name="twitter:image:alt"
-      content="Sovereignbase social sharing image for the UUIDv7 observed-remove set specification."
+      content="Sovereignbase social sharing image for the observed overwrite struct specification."
     />
     <meta name="twitter:creator" content="@jortsupetterson" />
     <script
@@ -83,8 +83,8 @@
     <script class="remove">
       var respecConfig = {
         specStatus: 'unofficial',
-        shortName: 'uuidv7-orset',
-        github: 'sovereignbase/observed-remove-set',
+        shortName: 'observed-overwrite-struct',
+        github: 'sovereignbase/observed-overwrite-struct',
         latestVersion: null,
         edDraftURI: null,
         editors: [
@@ -101,23 +101,30 @@
           'no-unused-dfns': true,
         },
         localBiblio: {
+          CRDTOVERVIEW: {
+            title: 'Conflict-free Replicated Data Types: An Overview',
+            href: 'https://asc.di.fct.unl.pt/~nmp/pubs/tr-arxiv-crdt-2018.pdf',
+            publisher: 'arXiv',
+            date: '2018-06',
+          },
+          RIAKDTMAP: {
+            title:
+              'Riak DT Map: A Composable, Convergent Replicated Dictionary',
+            href: 'https://doi.org/10.1145/2596631.2596633',
+            publisher: 'ACM',
+            date: '2014',
+          },
+          DELTACRDTS: {
+            title: 'Delta State Replicated Data Types',
+            href: 'https://doi.org/10.1016/j.jpdc.2017.08.003',
+            publisher: 'Journal of Parallel and Distributed Computing',
+            date: '2018',
+          },
           RFC9562: {
             title: 'Universally Unique IDentifiers (UUIDs)',
             href: 'https://www.rfc-editor.org/rfc/rfc9562',
             publisher: 'IETF',
             date: '2024-05',
-          },
-          ORSET: {
-            title: 'An optimized conflict-free replicated set',
-            href: 'https://arxiv.org/abs/1210.3368',
-            publisher: 'arXiv',
-            date: '2012-10-12',
-          },
-          NIK96A: {
-            title: 'Optimised ObservedRemove Set in depth',
-            href: 'https://medium.com/@nik96a/optimised-observedremove-set-in-depth-60770103a650',
-            publisher: '@nik96a',
-            date: '2022-10-31',
           },
         },
       }
@@ -128,13 +135,13 @@
         "@graph": [
           {
             "@type": "Organization",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#organization",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization",
             "name": "Sovereignbase",
             "url": "https://github.com/sovereignbase",
             "alternateName": ["@sovereignbase"],
             "logo": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/observed-remove-set/sovereignbase_logo.png",
+              "url": "https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_logo.png",
               "width": 320,
               "height": 320
             },
@@ -146,7 +153,7 @@
           },
           {
             "@type": "Person",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#author",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author",
             "name": "Jori Lehtinen",
             "url": "https://github.com/jortsupetterson",
             "alternateName": ["jortsupetterson", "@jortsupetterson"],
@@ -161,22 +168,22 @@
           },
           {
             "@type": "WebSite",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#website",
-            "url": "https://sovereignbase.github.io/observed-remove-set/",
-            "name": "observed-remove-set",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website",
+            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
+            "name": "observed-overwrite-struct",
             "inLanguage": "en",
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#organization"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
             }
           },
           {
             "@type": "SoftwareSourceCode",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#software",
-            "name": "@sovereignbase/observed-remove-set",
-            "alternateName": ["observed-remove-set", "uuidv7-orset"],
-            "url": "https://sovereignbase.github.io/observed-remove-set/",
-            "description": "UUIDv7-optimized observed-remove set for JavaScript and TypeScript with delta, merge, and snapshot events.",
-            "codeRepository": "https://github.com/sovereignbase/observed-remove-set",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software",
+            "name": "@sovereignbase/observed-overwrite-struct",
+            "alternateName": ["observed-overwrite-struct", "oo-struct"],
+            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
+            "description": "State-based CRDT for fixed-key object structs with UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
+            "codeRepository": "https://github.com/sovereignbase/observed-overwrite-struct",
             "license": "https://www.apache.org/licenses/LICENSE-2.0",
             "programmingLanguage": ["TypeScript", "JavaScript"],
             "runtimePlatform": [
@@ -189,81 +196,81 @@
             ],
             "keywords": [
               "crdt",
-              "observed-remove-set",
-              "orset",
+              "observed-overwrite-struct",
+              "oo-struct",
               "uuidv7",
               "replication",
-              "tombstones",
+              "overwrite-tracking",
               "eventtarget"
             ],
-            "image": "https://sovereignbase.github.io/observed-remove-set/sovereignbase_social_sharing_image.png",
+            "image": "https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png",
             "isAccessibleForFree": true,
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#author"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
             },
             "maintainer": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#organization"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#organization"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
             },
             "sameAs": [
-              "https://jsr.io/@sovereignbase/observed-remove-set/",
-              "https://www.npmjs.com/package/@sovereignbase/observed-remove-set"
+              "https://jsr.io/@sovereignbase/observed-overwrite-struct/",
+              "https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct"
             ]
           },
           {
             "@type": "TechArticle",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#specification",
-            "headline": "Observed Overwrite Struct CRDT Specification",
-            "name": "Observed Overwrite Struct CRDT Specification",
-            "url": "https://sovereignbase.github.io/observed-remove-set/",
-            "description": "Specification and reference JavaScript binding for a UUIDv7-optimized observed-remove set (OR-Set), including delta, merge, snapshot, and tombstone garbage-collection guidance.",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#specification",
+            "headline": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
+            "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
+            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
+            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
             "inLanguage": "en",
             "isPartOf": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#website"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
             },
             "mainEntityOfPage": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#webpage"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#webpage"
             },
             "about": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#software"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software"
             },
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#author"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#organization"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
             },
             "image": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/observed-remove-set/sovereignbase_social_sharing_image.png",
+              "url": "https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png",
               "width": 1200,
               "height": 630
             }
           },
           {
             "@type": "WebPage",
-            "@id": "https://sovereignbase.github.io/observed-remove-set/#webpage",
-            "url": "https://sovereignbase.github.io/observed-remove-set/",
-            "name": "Observed Overwrite Struct CRDT Specification",
-            "description": "Specification and reference JavaScript binding for a UUIDv7-optimized observed-remove set (OR-Set), including delta, merge, snapshot, and tombstone garbage-collection guidance.",
+            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#webpage",
+            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
+            "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
+            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
             "inLanguage": "en",
             "isPartOf": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#website"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
             },
             "about": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#software"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software"
             },
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#author"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-remove-set/#organization"
+              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
             },
             "primaryImageOfPage": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/observed-remove-set/sovereignbase_social_sharing_image.png",
+              "url": "https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png",
               "width": 1200,
               "height": 630
             },
@@ -271,9 +278,9 @@
               "https://github.com/sovereignbase",
               "https://jsr.io/@sovereignbase",
               "https://www.npmjs.com/org/sovereignbase",
-              "https://github.com/sovereignbase/observed-remove-set",
-              "https://jsr.io/@sovereignbase/observed-remove-set/",
-              "https://www.npmjs.com/package/@sovereignbase/observed-remove-set",
+              "https://github.com/sovereignbase/observed-overwrite-struct",
+              "https://jsr.io/@sovereignbase/observed-overwrite-struct/",
+              "https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct",
               "https://github.com/jortsupetterson",
               "https://www.npmjs.com/~jortsupetterson",
               "https://jsr.io/user/ab186a13-a64f-429e-a757-927aa4fa6e6c",
@@ -289,8 +296,12 @@
   <body>
     <section id="abstract">
       <p>
-        This document specifies a state based crdt for creating conflict free
-        object structs, utilizing features from both OR-Map and LWW crdt
+        This document specifies Observed Overwrite Struct (OO-Struct), a
+        state-based CRDT for fixed-key object structs. Each field maintains one
+        visible value together with authoritative knowledge of overwritten
+        UUIDv7 identifiers. The specification defines the data model, merge
+        rules, snapshot and delta formats, overwrite-set handling, and one
+        conforming JavaScript binding.
       </p>
     </section>
 
@@ -310,42 +321,49 @@
       </p>
       <p>
         Unless otherwise stated, neutral data-structure and algorithm terms such
-        as <em>list</em>, <em>set</em>, <em>contains</em>, <em>append</em>, and
-        <em>remove</em> are used with the meanings defined by Infra [[INFRA]].
+        as <em>struct</em>, <em>map</em>, <em>list</em>, <em>set</em>,
+        <em>contains</em>, and <em>remove</em> are used with the meanings
+        defined by Infra [[INFRA]].
       </p>
       <p>
         A conforming implementation MUST preserve the replica convergence and
-        removal semantics defined by the algorithms in this specification.
+        overwrite semantics defined by the algorithms in this specification.
       </p>
     </section>
 
     <section class="informative">
       <h2>Introduction</h2>
       <p>
-        An OR-Set gives each value a stable identity that can later be marked as
-        tombstoned. In the classic OR-Set, adds are distinguished by fresh
-        unique tags and removes record the observed tagged values [[ORSET]].
-        Once a removed identity has been observed, the removed value no longer
-        needs to remain present for remove semantics.
+        OO-Struct is designed for static object shapes where keys are known up
+        front and each key keeps one visible value of a stable runtime kind.
       </p>
       <p>
-        UUIDv7 is a particularly useful identifier format for this purpose
-        [[RFC9562]]. It is fixed-width, designed for time-ordering, and includes
-        enough non-time entropy to keep collision risk negligible for normal
-        distributed application use.
+        OO-Struct is informed by map CRDTs with observed-remove semantics
+        [[RIAKDTMAP]] [[DELTACRDTS]] and by LWW-register-style one-visible-
+        winner conflict resolution [[CRDTOVERVIEW]], but it is not an OR-Map or
+        a plain last-writer-wins register. Its field set is fixed by the default
+        struct, and its distinguishing replicated state is the per-field
+        overwrite set that records which UUIDv7 identifiers have already been
+        superseded.
       </p>
-      <p>This combination gives a practical OR-Set profile:</p>
+      <p>
+        Taken together, the fixed field set, one-visible-value policy, per-field
+        overwrite tracking, and UUIDv7 identifiers yield the following
+        operational properties in the reference binding:
+      </p>
       <ul>
         <li>
-          each add observation receives an identifier that can be minted without
-          central coordination;
+          each field update can mint a fresh UUIDv7 without central
+          coordination;
+        </li>
+        <li>each field keeps only one visible value at a time;</li>
+        <li>
+          the overwrite set allows stale candidates to be rejected and rebuttal
+          deltas to be emitted during merge;
         </li>
         <li>
-          each tombstone can be represented by a single UUIDv7 identifier;
-        </li>
-        <li>
-          identifier order is useful for indexing, merging, and deployment
-          specific tombstone garbage collection heuristics.
+          UUIDv7 ordering is useful as a deterministic fallback when overwrite
+          knowledge alone does not decide the winner [[RFC9562]].
         </li>
       </ul>
     </section>
@@ -353,240 +371,236 @@
     <section>
       <h2>Terminology</h2>
       <p>
-        An <dfn>OR-Set replica</dfn> is one independently mutable copy of the
-        data type.
+        An <dfn>OO-Struct replica</dfn> is one independently mutable instance of
+        the data type.
       </p>
       <p>
-        An <dfn>identifier</dfn> is the per-add token that distinguishes one
-        observed add from another.
+        A <dfn>default struct</dfn> is the application-supplied <a>struct</a>
+        whose keys and default values define the replica's field space.
+      </p>
+      <p>
+        A <dfn>field key</dfn> is one own property name from the
+        <a>default struct</a>.
+      </p>
+      <p>
+        A <dfn>field value</dfn> is the visible payload presently selected for a
+        given <a>field key</a>.
+      </p>
+      <p>
+        A <dfn>field state entry</dfn> is the per-key replicated state record
+        containing a current identifier, a predecessor identifier, a current
+        field value, and a set of overwritten identifiers.
       </p>
       <p>
         A <dfn>UUIDv7 identifier</dfn> is an identifier that is a valid UUID
         version 7 as defined by [[RFC9562]].
       </p>
       <p>
-        A <dfn>stored value</dfn> is a payload value associated with an
-        <a>identifier</a>.
+        An <dfn>overwritten identifier</dfn> is a UUIDv7 that appears in a
+        <a>field state entry</a>'s set of overwritten identifiers.
       </p>
       <p>
-        A <dfn>live value</dfn> is a <a>stored value</a> whose identifier is
-        present in a replica's live item store and absent from that replica's
-        <a>tombstone</a> set.
-      </p>
-      <p>A <dfn>tombstone</dfn> is an identifier recorded as removed.</p>
-      <p>
-        A <dfn>snapshot</dfn> is a transportable state containing a collection
-        of live values and a collection of tombstones.
+        A <dfn>snapshot</dfn> is the full current replica state containing one
+        <a>field state entry</a> for every <a>field key</a>.
       </p>
       <p>
-        A <dfn>well-formed snapshot</dfn> is a value that is an object and has a
-        <code>values</code> member whose value is a list and a
-        <code>tombstones</code> member whose value is a list.
+        A <dfn>delta</dfn> is a partial snapshot containing only the keys a
+        replica wishes to upstream.
       </p>
       <p>
-        An <dfn>acknowledgement frontier</dfn> is deployment metadata that
-        states, for a given actor, the greatest identifier below or equal to
-        which that actor will not later surface previously unseen operations.
+        A <dfn>well-formed snapshot</dfn> is a value that is an object whose
+        known keys each map to a valid field state entry for the corresponding
+        <a>default struct</a> field.
       </p>
     </section>
 
     <section>
       <h2>Core Model</h2>
-      <p>Each <a>OR-Set replica</a> maintains two logical collections:</p>
+      <p>Each <a>OO-Struct replica</a> maintains two logical objects:</p>
       <ul>
         <li>
-          a live value store keyed by <a>identifier</a>, containing the visible
-          <a>live value</a> values; and
+          a live struct keyed by <a>field key</a>, containing the visible
+          <a>field value</a> values; and
         </li>
         <li>
-          a <a>tombstone</a> set containing identifiers that have been observed
-          as removed.
+          a state struct keyed by <a>field key</a>, containing one current
+          <a>field state entry</a> per field.
         </li>
       </ul>
       <p>
-        Remove semantics depend on identifiers, not on payload equality. A
-        conforming implementation MUST therefore record at least the removed
-        identifier and MAY discard the removed value itself. It MUST NOT require
-        the removed payload to remain available in order to preserve remove
-        semantics.
+        Each current <a>field state entry</a> records one current
+        <a>UUIDv7 identifier</a>, one predecessor <a>UUIDv7 identifier</a>, one
+        current <a>field value</a>, and one set of
+        <a>overwritten identifier</a>s.
       </p>
       <p>
-        Each live identifier MUST correspond to at most one accepted add
-        observation in a replica's live item store. If multiple candidate live
-        values with the same identifier are received, the first accepted live
-        value MAY be retained and later duplicates MAY be ignored.
+        A UUIDv7 that appears in a field's overwrite set is an
+        <a>overwritten identifier</a>. If an identifier is overwritten, a
+        conforming implementation MUST NOT later make it current again for that
+        same <a>field key</a>.
+      </p>
+      <p>
+        The predecessor identifier names one overwritten predecessor and MUST
+        itself be present in the field's overwrite set. The reference binding
+        bootstraps each field with a synthetic predecessor UUIDv7 so that every
+        field state entry always names an already overwritten predecessor.
       </p>
     </section>
 
     <section>
       <h2>UUIDv7 Identifier Requirements</h2>
       <p>
-        A conforming UUIDv7-based OR-Set implementation MUST assign one
-        <a>UUIDv7 identifier</a> to each add observation.
+        A conforming OO-Struct implementation MUST assign one valid
+        <a>UUIDv7 identifier</a> to each current <a>field state entry</a>.
       </p>
       <p>
-        Implementations SHOULD preserve a caller supplied UUIDv7 identifier only
-        when that identifier is valid, not currently live, and not already
-        tombstoned.
+        The reference binding generates fresh UUIDv7 identifiers for local
+        overwrites and compares canonical textual UUIDv7 representations
+        lexicographically when it needs an order for merge resolution.
       </p>
       <p>
-        If an implementation needs a total order over identifiers, it MUST
-        compare them by their UUID value. A host MAY compare canonical textual
-        UUID representations directly because UUIDv7 values are intended to be
-        lexicographically sortable in text as well as in raw bytes [[RFC9562]].
+        Ordering does not override overwrite knowledge. If an identifier is in a
+        field's overwrite set, it is an
+        <a>overwritten identifier</a> regardless of any later lexical
+        comparison.
       </p>
       <aside class="note">
         <p>
           UUIDv7 combines a Unix-epoch millisecond time component with
           additional bits reserved for monotonicity and pseudorandom uniqueness
-          [[RFC9562]]. This makes it a useful fit for OR-Set identifiers that
+          [[RFC9562]]. This makes it a useful fit for per-field identifiers that
           benefit from both local ordering and low collision probability.
         </p>
       </aside>
     </section>
 
     <section>
-      <h2>Replica Semantics</h2>
+      <h2>Methods</h2>
 
       <section>
-        <h3>Add</h3>
+        <h3>Create</h3>
         <p>
-          An add operation MUST produce or adopt one <a>UUIDv7 identifier</a>
-          and associate that identifier with exactly one payload value.
+          A create operation constructs a new replica from a
+          <a>default struct</a> and an optional <a>snapshot</a>.
         </p>
         <p>
-          If the chosen identifier is already live in the target replica, the
-          add operation MAY be treated as a no-op.
-        </p>
-        <p>
-          If the chosen identifier is tombstoned in the target replica, the add
-          operation MUST NOT resurrect that tombstoned observation. A conforming
-          implementation SHOULD instead mint a fresh UUIDv7 identifier for the
-          new add observation.
+          If a <a>well-formed snapshot</a> is supplied, the replica adopts each
+          well-formed known field state entry from it. Otherwise the replica
+          initializes that field from the default struct and mints fresh UUIDv7
+          state for it.
         </p>
       </section>
 
       <section>
-        <h3>Remove</h3>
+        <h3>Read</h3>
         <p>
-          A remove operation in the reference JavaScript binding operates over
-          locally visible live state.
+          A read operation returns the current visible <a>field value</a> for a
+          known <a>field key</a>.
+        </p>
+      </section>
+
+      <section>
+        <h3>Update</h3>
+        <p>
+          An update operation MUST mint a fresh <a>UUIDv7 identifier</a> for the
+          target <a>field key</a>, make the previously current UUIDv7 the new
+          predecessor identifier, add that predecessor to the overwrite set, and
+          set the <a>field value</a> to the supplied payload.
         </p>
         <p>
-          If a <a>live value</a> with that identifier exists, it MUST be removed
-          from the live value store and the identifier MUST be recorded in the
-          tombstone set.
+          The reference binding does not compare payload equality before
+          overwriting. Every successful local update creates a new per-field
+          delta and a new per-field change event.
+        </p>
+      </section>
+
+      <section>
+        <h3>Delete</h3>
+        <p>
+          In the reference binding, <code>delete()</code> resets fields to their
+          default values. It does not remove the <a>field key</a> from the
+          struct shape.
         </p>
         <p>
-          If no <a>live value</a> with that identifier exists in the local
-          replica, the reference JavaScript binding MUST treat the remove
-          operation as a no-op.
+          If a key is supplied, only that field is reset. If no key is supplied,
+          every field in the <a>default struct</a> is reset. Unknown explicit
+          keys are ignored.
         </p>
       </section>
 
       <section>
         <h3>Merge</h3>
         <p>
-          Merge operates over a <a>snapshot</a>. A conforming implementation
-          MUST process tombstones before live values from the same incoming
-          snapshot.
+          Merge operates over a <a>delta</a> or a full <a>snapshot</a>. A
+          conforming implementation MUST process the incoming state one
+          <a>field key</a> at a time.
         </p>
-        <p>When merging:</p>
+        <p>When merging one incoming field state entry:</p>
         <ol class="algorithm">
+          <li>If the field key is unknown locally, continue.</li>
           <li>
-            If the incoming value is not a <a>well-formed snapshot</a>, then the
-            implementation MUST reject it.
+            If the incoming value does not parse as a valid field state entry
+            for that key, continue.
           </li>
           <li>
-            For each incoming tombstone:
-            <ol>
-              <li>
-                If the tombstone is not a valid <a>UUIDv7 identifier</a>,
-                continue.
-              </li>
-              <li>Add the tombstone to the local tombstone set.</li>
-              <li>
-                Remove any live value with the same identifier from the local
-                live value store.
-              </li>
-            </ol>
+            Union the incoming overwrite set into the local overwrite set before
+            making any winner decision.
           </li>
           <li>
-            For each incoming live value:
-            <ol>
-              <li>Let <var>id</var> be the value's identifier.</li>
-              <li>
-                If <var>id</var> is not a valid <a>UUIDv7 identifier</a>,
-                continue.
-              </li>
-              <li>
-                If the local tombstone set contains <var>id</var>, continue.
-              </li>
-              <li>
-                If the local live value store already contains <var>id</var>,
-                continue.
-              </li>
-              <li>Insert the live value under <var>id</var>.</li>
-            </ol>
+            If the local overwrite set now contains the incoming UUIDv7,
+            continue.
+          </li>
+          <li>
+            If the current and incoming entries share the same UUIDv7, then the
+            incoming entry wins only when its predecessor identifier is
+            lexicographically greater. Otherwise the replica MUST mint a fresh
+            local overwrite using the current visible <a>field value</a> and
+            emit that repair state as delta.
+          </li>
+          <li>
+            Otherwise the incoming entry wins if any of the following is true:
+            its predecessor identifier equals the local current UUIDv7; the
+            local overwrite set already contains the local current UUIDv7; or
+            the incoming UUIDv7 is lexicographically greater than the local
+            current UUIDv7.
+          </li>
+          <li>
+            If the incoming entry does not win, its UUIDv7 MUST be added to the
+            local overwrite set and the local field state MAY be emitted back
+            out as rebuttal delta.
           </li>
         </ol>
-        <p>
-          This ordering guarantees that an incoming item whose identifier is
-          tombstoned by the same merge will not be reintroduced as live state.
-        </p>
       </section>
 
       <section>
         <h3>Snapshot</h3>
         <p>
-          A <a>snapshot</a> MUST contain enough information to recreate the live
-          value store and the <a>tombstone</a> set.
+          A <a>snapshot</a> MUST contain enough information to recreate the
+          current field state entry for every known <a>field key</a>.
         </p>
         <p>
-          A snapshot MAY ignore malformed individual values and malformed
-          individual tombstones so long as malformed top-level input is still
-          rejected.
+          A <a>delta</a> MUST use the same per-field state-entry format as a
+          snapshot but MAY include only a subset of keys.
         </p>
       </section>
     </section>
 
     <section>
-      <h2>Tombstone Garbage Collection</h2>
+      <h2>Overwrite-Set Compaction</h2>
       <p>
-        Tombstone garbage collection is deployment specific. This specification
-        does not require any particular garbage collection strategy.
+        Overwrite-set compaction is deployment specific. This specification does
+        not require any particular compaction strategy.
       </p>
       <p>
-        A conforming implementation MAY expose tombstones to application logic
-        so that an external replication layer can decide when collection is
-        safe.
-      </p>
-      <p>
-        A deployment MAY maintain one <a>acknowledgement frontier</a> per actor
-        and update that frontier with the greatest acknowledged UUIDv7
-        identifier for that actor.
-      </p>
-      <p>
-        When acknowledgements are exchanged across trust boundaries, they SHOULD
-        be authenticated, for example by signatures.
-      </p>
-      <p>
-        If a deployment gives each actor frontier the meaning that the actor
-        will not later surface previously unseen operations at identifiers less
-        than or equal to that frontier, then the deployment MAY compute a
-        garbage collection floor as the minimum acknowledged frontier across the
-        relevant actors.
-      </p>
-      <p>
-        Under that stronger acknowledgement model, tombstones whose identifiers
-        are strictly less than the garbage collection floor MAY be deleted.
+        A deployment MAY compact overwrite knowledge only when it can prove that
+        no later replica synchronization will depend on the removed identifiers
+        to reject stale state.
       </p>
       <aside class="note">
         <p>
-          The safety condition comes from the acknowledgement contract, not from
-          timestamp ordering alone. UUIDv7 ordering makes the frontier compact
-          and practical, but deployments still need a correct rule for what an
-          acknowledgement proves.
+          UUIDv7 lexical ordering can make deployment-specific frontier schemes
+          practical, but compaction safety comes from the replication contract,
+          not from ordering alone.
         </p>
       </aside>
     </section>
@@ -594,14 +608,14 @@
     <section class="informative">
       <h2>Payload Guidance</h2>
       <p>
-        This technique is best suited to membership state and static metadata.
-        It is not, by itself, a field-level CRDT for mutating nested object
-        graphs.
+        OO-Struct is best suited to static object shapes whose fields hold
+        stable runtime kinds. It is not, by itself, a field-level CRDT for
+        recursively mutating nested object graphs.
       </p>
       <p>
-        An implementation MAY shallow-freeze stored values as a low-cost hint
-        that item payloads are not intended to be mutated in place. Such a hint
-        does not create deep replication semantics for nested values.
+        The reference binding performs a shallow runtime-kind validation against
+        the corresponding default value. It does not define deep schema
+        validation for nested payload structure.
       </p>
     </section>
 
@@ -616,32 +630,33 @@
         <h3>API Summary</h3>
         <pre class="idl">
 [Exposed=*]
-interface ORSet {
-  constructor();
-  constructor(ORSetSnapshot snapshot);
-  readonly attribute unsigned long size;
-  boolean has(any value);
-  undefined append(any value);
-  undefined clear();
-  undefined remove(any value);
-  sequence&lt;any&gt; values();
-  any tombstones();
-  undefined merge(ORSetSnapshot ingress);
+interface OOStruct {
+  constructor(object defaults, optional object snapshot);
+  static OOStruct create(object defaults, optional object snapshot);
+  any read(DOMString key);
+  undefined update(DOMString key, any value);
+  undefined delete(optional DOMString key);
+  undefined merge(object replica);
   undefined snapshot();
   undefined addEventListener(DOMString type, any listener, optional any options);
   undefined removeEventListener(DOMString type, any listener, optional any options);
 };
 
-dictionary ORSetSnapshot {
-  required sequence&lt;any&gt; values;
-  required sequence&lt;DOMString&gt; tombstones;
-};
-
-dictionary ORSetMergeResult {
-  sequence&lt;DOMString&gt; removals = [];
-  sequence&lt;any&gt; additions = [];
+dictionary OOStructSnapshotEntry {
+  required DOMString uuidv7;
+  required DOMString after;
+  required any value;
+  required FrozenArray&lt;DOMString&gt; overwrites;
 };
         </pre>
+        <p>
+          Snapshot, delta, and change payloads are plain JavaScript objects
+          keyed by known fields. The actual payload member names are
+          <code>__uuidv7</code>, <code>__after</code>, <code>__value</code>, and
+          <code>__overwrites</code>. The Web IDL above uses IDL-safe member
+          names because dictionary members cannot use the double-underscore
+          form.
+        </p>
       </section>
 
       <section>
@@ -664,296 +679,236 @@ dictionary ORSetMergeResult {
         <dl>
           <dt><dfn>delta event</dfn></dt>
           <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> contains only
-            the values and tombstones produced by one local mutation.
+            A <code>CustomEvent</code> whose <code>detail</code> is a per-field
+            <a>delta</a>. The binding dispatches this event for local overwrites
+            and for merge-time repair or rebuttal state that should be
+            upstreamed.
+          </dd>
+          <dt><dfn>change event</dfn></dt>
+          <dd>
+            A <code>CustomEvent</code> whose <code>detail</code> maps changed
+            keys to their new visible values.
           </dd>
           <dt><dfn>snapshot event</dfn></dt>
           <dd>
             A <code>CustomEvent</code> whose <code>detail</code> is the full
             current snapshot produced when
-            <a data-link-for="ORSet">snapshot()</a>
+            <a data-link-for="OOStruct">snapshot()</a>
             is invoked.
           </dd>
-          <dt><dfn>merge event</dfn></dt>
-          <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> contains the
-            added values and removals accepted from an incoming merge.
-          </dd>
         </dl>
-        <p>A no-op mutation MUST NOT dispatch any event.</p>
+        <p>
+          <a data-link-for="OOStruct">update()</a> and
+          <a data-link-for="OOStruct">delete()</a> MUST dispatch
+          <a>delta event</a> before <a>change event</a>. A merge MUST dispatch
+          <a>delta event</a> only when it produces egress delta material and
+          MUST dispatch <a>change event</a> only when visible field values
+          change.
+        </p>
       </section>
 
       <section>
-        <h3>Errors</h3>
-        <p>
-          If the JavaScript binding rejects a malformed top-level snapshot, it
-          MUST throw an <code>Error</code>-derived object whose
-          <code>name</code> is <code>ORSetError</code> and whose
-          <code>code</code> is <code>BAD_SNAPSHOT</code>.
-        </p>
+        <h3>Auxiliary Algorithms</h3>
+
+        <section>
+          <h4><dfn>parse a snapshot entry</dfn></h4>
+          <ol class="algorithm">
+            <li>
+              If the candidate value is not a record, then return failure.
+            </li>
+            <li>
+              If the candidate value does not have its own <code>__value</code>
+              member, then return failure.
+            </li>
+            <li>
+              If the candidate value's <code>__uuidv7</code> member is not a
+              valid <a>UUIDv7 identifier</a>, then return failure.
+            </li>
+            <li>
+              If the candidate value's <code>__after</code> member is not a
+              valid <a>UUIDv7 identifier</a>, then return failure.
+            </li>
+            <li>
+              If the candidate value's <code>__overwrites</code> member is not a
+              list, then return failure.
+            </li>
+            <li>
+              If the candidate value's <code>__value</code> member does not have
+              the same runtime prototype category as the corresponding default
+              value, then return failure.
+            </li>
+            <li>Let <var>overwrites</var> be a new empty set.</li>
+            <li>
+              For each listed overwrite, ignore non-UUIDv7 values and the
+              candidate's own <code>__uuidv7</code>; add the rest to
+              <var>overwrites</var>.
+            </li>
+            <li>
+              If <var>overwrites</var> does not contain <code>__after</code>,
+              then return failure.
+            </li>
+            <li>Return the normalized field entry.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h4><dfn>serialize a state entry</dfn></h4>
+          <p>
+            Return a new snapshot entry whose scalar members equal the field
+            entry and whose <code>__overwrites</code> is a list created from the
+            overwrite set in iteration order.
+          </p>
+        </section>
       </section>
 
       <section>
         <h3>Algorithms</h3>
 
-        <section data-dfn-for="ORSet">
-          <h4><dfn>Constructor</dfn></h4>
+        <section data-dfn-for="OOStruct">
+          <h4><dfn class="lint-ignore">Constructor</dfn></h4>
           <ol class="algorithm">
-            <li>Set <var>size</var> to <code>0</code>.</li>
             <li>
-              Initialize the live value store to an empty object and the
-              tombstone set to an empty set.
+              Shallow-copy <var>defaults</var> as the <a>default struct</a>.
+            </li>
+            <li>Initialize live state and state entries as empty objects.</li>
+            <li>
+              If <var>snapshot</var> is a non-null object and not a list, then
+              for each field key in the default struct attempt to
+              <a>parse a snapshot entry</a> from the matching incoming value. If
+              parsing succeeds, adopt that entry.
             </li>
             <li>
-              If <var>snapshot</var> is <code>undefined</code>, then return.
-            </li>
-            <li>
-              If <var>snapshot</var> is not a <a>well-formed snapshot</a>, then
-              throw an <code>ORSetError</code> with code
-              <code>BAD_SNAPSHOT</code>.
-            </li>
-            <li>
-              For each <var>tomb</var> in <var>snapshot</var>'s
-              <code>tombstones</code>:
-              <ol>
-                <li>
-                  If <var>tomb</var> is not a valid <a>UUIDv7 identifier</a>,
-                  continue.
-                </li>
-                <li>Add <var>tomb</var> to the tombstone set.</li>
-              </ol>
-            </li>
-            <li>
-              For each <var>value</var> in <var>snapshot</var>'s
-              <code>values</code>:
-              <ol>
-                <li>
-                  Let <var>id</var> be <var>value</var>'s
-                  <code>__uuidv7</code> member.
-                </li>
-                <li>
-                  If <var>id</var> is not a valid <a>UUIDv7 identifier</a>,
-                  continue.
-                </li>
-                <li>If the tombstone set contains <var>id</var>, continue.</li>
-                <li>
-                  If the live value store already has its own property named
-                  <var>id</var>, continue.
-                </li>
-                <li>
-                  Store <code>Object.freeze(value)</code> in the live value
-                  store at <var>id</var>.
-                </li>
-                <li>Increase <var>size</var> by <code>1</code>.</li>
-              </ol>
+              For every field key not adopted from the incoming snapshot, set
+              the live value to the default value and create a fresh current
+              field entry with a fresh <code>__uuidv7</code>, a fresh synthetic
+              root in <code>__after</code>, and an overwrite set containing only
+              that synthetic root.
             </li>
           </ol>
         </section>
 
-        <section data-dfn-for="ORSet">
-          <h4><dfn>has()</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              Let <var>id</var> be <var>value</var> if <var>value</var> is a
-              string; otherwise let <var>id</var> be
-              <code>value.__uuidv7</code>.
-            </li>
-            <li>
-              Return true if the live value store has its own property named
-              <var>id</var>; otherwise return false.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
-          <h4><dfn>append()</dfn></h4>
-          <ol class="algorithm">
-            <li>Let <var>id</var> be <code>value.__uuidv7</code>.</li>
-            <li>
-              If <var>id</var> is a valid <a>UUIDv7 identifier</a> and the live
-              value store already has its own property named <var>id</var>, then
-              return.
-            </li>
-            <li>
-              If <var>id</var> is a valid <a>UUIDv7 identifier</a> and the
-              tombstone set does not contain <var>id</var>, then let
-              <var>stored value</var> be <code>Object.freeze(value)</code>.
-            </li>
-            <li>
-              Otherwise, let <var>stored value</var> be
-              <code>Object.freeze({...value, __uuidv7: new UUIDv7})</code>,
-              where <var>new UUIDv7</var> is freshly generated.
-            </li>
-            <li>
-              Let <var>next id</var> be <var>stored value</var>'s
-              <code>__uuidv7</code>.
-            </li>
-            <li>
-              Store <var>stored value</var> in the live value store at
-              <var>next id</var>.
-            </li>
-            <li>Increase <var>size</var> by <code>1</code>.</li>
-            <li>
-              Dispatch a <a>delta event</a> whose detail contains
-              <code>values: [stored value]</code> and
-              <code>tombstones: []</code>.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
-          <h4><dfn>clear()</dfn></h4>
-          <ol class="algorithm">
-            <li>If <var>size</var> is <code>0</code>, then return.</li>
-            <li>Let <var>egress tombstones</var> be a new empty list.</li>
-            <li>
-              For each own property name <var>id</var> of the live value store:
-              <ol>
-                <li>Add <var>id</var> to the tombstone set.</li>
-                <li>Delete the live value store entry at <var>id</var>.</li>
-                <li>Append <var>id</var> to <var>egress tombstones</var>.</li>
-              </ol>
-            </li>
-            <li>Set <var>size</var> to <code>0</code>.</li>
-            <li>
-              Dispatch a <a>delta event</a> whose detail contains
-              <code>values: []</code> and
-              <code>tombstones: egress tombstones</code>.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
-          <h4><dfn>remove()</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              Let <var>id</var> be <var>value</var> if <var>value</var> is a
-              string; otherwise let <var>id</var> be
-              <code>value.__uuidv7</code>.
-            </li>
-            <li>
-              Let <var>had item</var> be whether the live value store has its
-              own property named <var>id</var>.
-            </li>
-            <li>If <var>had item</var> is false, then return.</li>
-            <li>Add <var>id</var> to the tombstone set.</li>
-            <li>Delete the live value store entry at <var>id</var>.</li>
-            <li>Decrease <var>size</var> by <code>1</code>.</li>
-            <li>
-              Dispatch a <a>delta event</a> whose detail contains
-              <code>values: []</code> and <code>tombstones: [id]</code>.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
-          <h4><dfn>values()</dfn></h4>
+        <section data-dfn-for="OOStruct">
+          <h4><dfn class="lint-ignore">create()</dfn></h4>
           <p>
-            Return a new list containing the live values in the live value
-            store's enumeration order.
+            Return a new <code>OOStruct</code> constructed from the arguments.
           </p>
         </section>
 
-        <section data-dfn-for="ORSet">
-          <h4><dfn>tombstones()</dfn></h4>
+        <section data-dfn-for="OOStruct">
+          <h4><dfn class="lint-ignore">read()</dfn></h4>
+          <p>Return the current visible value for key.</p>
+        </section>
+
+        <section data-dfn-for="OOStruct">
+          <h4><dfn>update()</dfn></h4>
+          <ol class="algorithm">
+            <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
+            <li>Let <var>changes</var> be a new empty changes object.</li>
+            <li>
+              Mint a fresh UUIDv7 for key, move the previous UUIDv7 into
+              <code>__after</code> and <code>__overwrites</code>, and set the
+              field's current value to the supplied payload.
+            </li>
+            <li>
+              Set <var>delta</var>[key] to the result of
+              <a>serialize a state entry</a> on the current field entry.
+            </li>
+            <li>Set <var>changes</var>[key] to the supplied payload.</li>
+            <li>
+              Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
+            </li>
+            <li>
+              Dispatch a <a>change event</a> whose detail is <var>changes</var>.
+            </li>
+          </ol>
+        </section>
+
+        <section data-dfn-for="OOStruct">
+          <h4><dfn>delete()</dfn></h4>
+          <ol class="algorithm">
+            <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
+            <li>Let <var>changes</var> be a new empty changes object.</li>
+            <li>
+              If key is not <code>undefined</code> and is unknown in the default
+              struct, then return.
+            </li>
+            <li>
+              If key is provided, overwrite that field with its default value
+              and record the result in <var>delta</var> and <var>changes</var>.
+            </li>
+            <li>
+              Otherwise, for each field in the default struct, overwrite that
+              field with its default value and record the results in
+              <var>delta</var> and <var>changes</var>.
+            </li>
+            <li>
+              Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
+            </li>
+            <li>
+              Dispatch a <a>change event</a> whose detail is <var>changes</var>.
+            </li>
+          </ol>
+        </section>
+
+        <section data-dfn-for="OOStruct">
+          <h4><dfn class="lint-ignore">merge()</dfn></h4>
+          <ol class="algorithm">
+            <li>If replica is null, not an object, or a list, return.</li>
+            <li>Let outgoing delta and changes be empty objects.</li>
+            <li>
+              For each own key in the incoming replica:
+              <ol>
+                <li>If the key is unknown locally, continue.</li>
+                <li>Parse the candidate entry. If parsing fails, continue.</li>
+                <li>
+                  Union the candidate overwrite set into the local target.
+                </li>
+                <li>
+                  If the target overwrite set now contains the candidate UUID,
+                  continue.
+                </li>
+                <li>
+                  If current and candidate share the same UUID, then adopt the
+                  candidate only when the candidate <code>__after</code> is
+                  lexicographically greater; otherwise create a fresh local
+                  overwrite with the current visible value and place that entry
+                  in outgoing delta by applying <a>serialize a state entry</a>.
+                </li>
+                <li>
+                  Otherwise, adopt the candidate when any of the following is
+                  true: current UUID equals candidate <code>__after</code>; the
+                  local target already knows the current UUID is overwritten; or
+                  the candidate UUID is lexicographically greater than the
+                  current UUID.
+                </li>
+                <li>
+                  If the candidate is not adopted, add its UUID to the local
+                  overwrite set and place the result of
+                  <a>serialize a state entry</a> on the local state in outgoing
+                  delta.
+                </li>
+              </ol>
+            </li>
+            <li>
+              If outgoing delta is non-empty, dispatch <a>delta event</a>.
+            </li>
+            <li>If changes is non-empty, dispatch <a>change event</a>.</li>
+          </ol>
+        </section>
+
+        <section data-dfn-for="OOStruct">
+          <h4><dfn class="lint-ignore">snapshot()</dfn></h4>
           <p>
-            Return the live tombstone set itself so that application level
-            replication logic can inspect or compact it directly.
+            Run <a>serialize a state entry</a> on every current field entry,
+            assemble the results into a full <a>snapshot</a>, and dispatch a
+            <a>snapshot event</a>. The method returns <code>undefined</code>.
           </p>
         </section>
 
-        <section data-dfn-for="ORSet">
-          <h4><dfn>merge()</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              If <var>ingress</var> is not a <a>well-formed snapshot</a>, then
-              throw an <code>ORSetError</code> with code
-              <code>BAD_SNAPSHOT</code>.
-            </li>
-            <li>Let <var>additions</var> be a new empty list.</li>
-            <li>Let <var>removals</var> be a new empty list.</li>
-            <li>
-              For each <var>tomb</var> in <var>ingress</var>'s
-              <code>tombstones</code>:
-              <ol>
-                <li>
-                  If the tombstone set already contains <var>tomb</var>,
-                  continue.
-                </li>
-                <li>
-                  If <var>tomb</var> is not a valid <a>UUIDv7 identifier</a>,
-                  continue.
-                </li>
-                <li>
-                  Let <var>had item</var> be whether the live value store has
-                  its own property named <var>tomb</var>.
-                </li>
-                <li>Add <var>tomb</var> to the tombstone set.</li>
-                <li>Delete the live value store entry at <var>tomb</var>.</li>
-                <li>
-                  If <var>had item</var> is true, decrease <var>size</var> by
-                  <code>1</code>.
-                </li>
-                <li>Append <var>tomb</var> to <var>removals</var>.</li>
-              </ol>
-            </li>
-            <li>
-              For each <var>value</var> in <var>ingress</var>'s
-              <code>values</code>:
-              <ol>
-                <li>
-                  Let <var>id</var> be <var>value</var>'s
-                  <code>__uuidv7</code> member.
-                </li>
-                <li>
-                  If <var>id</var> is not a valid <a>UUIDv7 identifier</a>,
-                  continue.
-                </li>
-                <li>If the tombstone set contains <var>id</var>, continue.</li>
-                <li>
-                  If the live value store already has its own property named
-                  <var>id</var>, continue.
-                </li>
-                <li>
-                  Store <code>Object.freeze(value)</code> in the live value
-                  store at <var>id</var>.
-                </li>
-                <li>Increase <var>size</var> by <code>1</code>.</li>
-                <li>Append <var>value</var> to <var>additions</var>.</li>
-              </ol>
-            </li>
-            <li>
-              If <var>additions</var> is empty and <var>removals</var> is empty,
-              then return.
-            </li>
-            <li>
-              Dispatch a <a>merge event</a> whose detail contains
-              <code>additions</code> and <code>removals</code>.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
-          <h4><dfn>snapshot()</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              Let <var>snapshot</var> be a new object whose
-              <code>values</code> member is a new list containing the current
-              live values and whose <code>tombstones</code> member is a new list
-              containing the current tombstones.
-            </li>
-            <li>
-              Dispatch a <a>snapshot event</a> whose detail is
-              <var>snapshot</var>.
-            </li>
-            <li>Return <code>undefined</code>.</li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="ORSet">
+        <section data-dfn-for="OOStruct">
           <h4>
-            <dfn>addEventListener()</dfn> and
-            <dfn>removeEventListener()</dfn>
+            <dfn class="lint-ignore">addEventListener()</dfn> and
+            <dfn class="lint-ignore">removeEventListener()</dfn>
           </h4>
           <p>
             Forward listener registration and listener removal to the binding's
@@ -967,9 +922,10 @@ dictionary ORSetMergeResult {
     <section class="informative">
       <h2>Acknowledgements</h2>
       <p>
-        This specification builds on the OR-Set literature [[ORSET]], the UUID
-        design in [[RFC9562]], and practical discussions of optimized
-        observed-remove sets such as [[NIK96A]].
+        This specification builds on UUIDv7 [[RFC9562]], map CRDTs with
+        observed-remove semantics [[RIAKDTMAP]] [[DELTACRDTS]], and LWW-register
+        literature [[CRDTOVERVIEW]], while defining a new fixed-key
+        overwrite-tracked struct CRDT.
       </p>
     </section>
   </body>
