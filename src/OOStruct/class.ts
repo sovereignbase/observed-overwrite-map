@@ -62,7 +62,7 @@ export class OOStruct<T extends Record<string, unknown>> {
     return new OOStruct(defaults, snapshot)
   }
 
-  read<K extends keyof T>(key: K): T[K] {
+  read<K extends keyof T>(key: K): Readonly<T[K]> {
     return this.__live[key]
   }
 
