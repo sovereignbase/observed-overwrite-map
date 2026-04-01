@@ -42,9 +42,13 @@ export type OOStructAcknowledgementFrontier<K extends string> = Record<
 /***/
 
 export type OOStructEventMap<T extends Record<string, unknown>> = {
+  /** STATE / PROJECTION */
   snapshot: OOStructSnapshot<T>
-  delta: OOStructDelta<T>
   change: OOStructChanges<T>
+
+  /** GOSSIP / PROTOCOL */
+  delta: OOStructDelta<T>
+  ack: Partial<OOStructAcknowledgementFrontier<Extract<keyof T, string>>>
 }
 
 export type OOStructEventListener<

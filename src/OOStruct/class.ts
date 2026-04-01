@@ -14,7 +14,7 @@ import { parseSnapshotEntryToStateEntry } from './parseSnapshotEntryToStateEntry
 import { parseStateEntryToSnapshotEntry } from './parseStateEntryToSnapshotEntry/index.js'
 
 export class OOStruct<T extends Record<string, unknown>> {
-  private readonly eventTarget = new EventTarget()
+  private readonly __eventTarget = new EventTarget()
   private readonly __defaults: T
   private readonly __state: OOStructState<T>
   private __live: T
@@ -53,6 +53,7 @@ export class OOStruct<T extends Record<string, unknown>> {
     }
   }
 
+  /**CRUD*/
   static create<T extends Record<string, unknown>>(
     defaults: { [K in keyof T]: T[K] },
     snapshot?: OOStructSnapshot<T>
@@ -69,8 +70,10 @@ export class OOStruct<T extends Record<string, unknown>> {
     const changes: OOStructChanges<T> = {}
     delta[key] = this.overwriteAndReturnSnapshotEntry(key, value)
     changes[key] = value
-    this.eventTarget.dispatchEvent(new CustomEvent('delta', { detail: delta }))
-    this.eventTarget.dispatchEvent(
+    this.__eventTarget.dispatchEvent(
+      new CustomEvent('delta', { detail: delta })
+    )
+    this.__eventTarget.dispatchEvent(
       new CustomEvent('change', { detail: changes })
     )
   }
@@ -93,12 +96,15 @@ export class OOStruct<T extends Record<string, unknown>> {
         changes[key as K] = value as T[K]
       }
     }
-    this.eventTarget.dispatchEvent(new CustomEvent('delta', { detail: delta }))
-    this.eventTarget.dispatchEvent(
+    this.__eventTarget.dispatchEvent(
+      new CustomEvent('delta', { detail: delta })
+    )
+    this.__eventTarget.dispatchEvent(
       new CustomEvent('change', { detail: changes })
     )
   }
 
+  /**MAGS*/
   merge<K extends keyof T>(replica: OOStructDelta<T>): void {
     if (!replica || typeof replica !== 'object' || Array.isArray(replica))
       return
@@ -157,33 +163,17 @@ export class OOStruct<T extends Record<string, unknown>> {
       delta[key as K] = parseStateEntryToSnapshotEntry(target)
     }
     if (Object.keys(delta).length > 0)
-      this.eventTarget.dispatchEvent(
+      this.__eventTarget.dispatchEvent(
         new CustomEvent('delta', { detail: delta })
       )
     if (Object.keys(changes).length > 0)
-      this.eventTarget.dispatchEvent(
+      this.__eventTarget.dispatchEvent(
         new CustomEvent('change', { detail: changes })
       )
   }
 
-  snapshot(): void {
-    const snapshot = {} as OOStructSnapshot<T>
-
-    for (const [key, value] of Object.entries(this.__state)) {
-      snapshot[key as keyof T] = parseStateEntryToSnapshotEntry(
-        value as OOStructStateEntry<T[keyof T]>
-      )
-    }
-
-    this.eventTarget.dispatchEvent(
-      new CustomEvent('snapshot', { detail: snapshot })
-    )
-  }
-
-  acks<
-    K extends Extract<keyof T, string>,
-  >(): OOStructAcknowledgementFrontier<K> {
-    const acks = {} as OOStructAcknowledgementFrontier<K>
+  acknowledge<K extends Extract<keyof T, string>>(): void {
+    const acks: Partial<OOStructAcknowledgementFrontier<K>> = {}
     for (const [key, value] of Object.entries(this.__state)) {
       let max = ''
       for (const overwrite of (value as OOStructStateEntry<T[K]>)
@@ -192,19 +182,7 @@ export class OOStruct<T extends Record<string, unknown>> {
       }
       acks[key as K] = max
     }
-    return acks
-  }
-
-  keys<K extends keyof T>(): Array<K> {
-    return Object.keys(this.__live) as Array<K>
-  }
-
-  values<K extends keyof T>(): Array<T[K]> {
-    return Object.values(this.__live) as Array<T[K]>
-  }
-
-  entries<K extends keyof T>(): Array<[K, T[K]]> {
-    return Object.entries(this.__live) as Array<[K, T[K]]>
+    this.__eventTarget.dispatchEvent(new CustomEvent('ack', { detail: acks }))
   }
 
   garbageCollect<K extends Extract<keyof T, string>>(
@@ -234,6 +212,36 @@ export class OOStruct<T extends Record<string, unknown>> {
     }
   }
 
+  snapshot(): void {
+    const snapshot = {} as OOStructSnapshot<T>
+
+    for (const [key, value] of Object.entries(this.__state)) {
+      snapshot[key as keyof T] = parseStateEntryToSnapshotEntry(
+        value as OOStructStateEntry<T[keyof T]>
+      )
+    }
+
+    this.__eventTarget.dispatchEvent(
+      new CustomEvent('snapshot', { detail: snapshot })
+    )
+  }
+
+  /**ADDITIONAL*/
+
+  keys<K extends keyof T>(): Array<K> {
+    return Object.keys(this.__live) as Array<K>
+  }
+
+  values<K extends keyof T>(): Array<T[K]> {
+    return Object.values(this.__live) as Array<T[K]>
+  }
+
+  entries<K extends keyof T>(): Array<[K, T[K]]> {
+    return Object.entries(this.__live) as Array<[K, T[K]]>
+  }
+
+  /**EVENTS*/
+
   /**
    * Registers an event listener.
    *
@@ -246,7 +254,7 @@ export class OOStruct<T extends Record<string, unknown>> {
     listener: OOStructEventListenerFor<T, K> | null,
     options?: boolean | AddEventListenerOptions
   ): void {
-    this.eventTarget.addEventListener(
+    this.__eventTarget.addEventListener(
       type,
       listener as EventListenerOrEventListenerObject | null,
       options
@@ -265,12 +273,14 @@ export class OOStruct<T extends Record<string, unknown>> {
     listener: OOStructEventListenerFor<T, K> | null,
     options?: boolean | EventListenerOptions
   ): void {
-    this.eventTarget.removeEventListener(
+    this.__eventTarget.removeEventListener(
       type,
       listener as EventListenerOrEventListenerObject | null,
       options
     )
   }
+
+  /**HELPERS*/
 
   private overwriteAndReturnSnapshotEntry<K extends keyof T>(
     key: K,
