@@ -6,11 +6,11 @@
     <title>Observed Overwrite Struct (OO-Struct) CRDT Specification</title>
     <meta
       name="description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       name="keywords"
-      content="observed overwrite struct, oo-struct, crdt, uuidv7, replication, delta, snapshot, lww, or-map, javascript, typescript"
+      content="observed overwrite struct, oo-struct, crdt, uuidv7, replication, delta, snapshot, acknowledgement, garbage collection, javascript, typescript"
     />
     <meta name="author" content="Jori Lehtinen" />
     <meta
@@ -40,7 +40,7 @@
     />
     <meta
       property="og:description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       property="og:url"
@@ -64,7 +64,7 @@
     />
     <meta
       name="twitter:description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics."
+      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       name="twitter:image"
@@ -182,7 +182,7 @@
             "name": "@sovereignbase/observed-overwrite-struct",
             "alternateName": ["observed-overwrite-struct", "oo-struct"],
             "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
-            "description": "State-based CRDT for fixed-key object structs with UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
+            "description": "State-based CRDT for fixed-key object structs with UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
             "codeRepository": "https://github.com/sovereignbase/observed-overwrite-struct",
             "license": "https://www.apache.org/licenses/LICENSE-2.0",
             "programmingLanguage": ["TypeScript", "JavaScript"],
@@ -201,7 +201,8 @@
               "uuidv7",
               "replication",
               "overwrite-tracking",
-              "eventtarget"
+              "acknowledgement",
+              "garbage-collection"
             ],
             "image": "https://sovereignbase.github.io/observed-overwrite-struct/sovereignbase_social_sharing_image.png",
             "isAccessibleForFree": true,
@@ -225,7 +226,7 @@
             "headline": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
             "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
             "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
-            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
+            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
             "inLanguage": "en",
             "isPartOf": {
               "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
@@ -254,7 +255,7 @@
             "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#webpage",
             "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
             "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
-            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, and deterministic merge semantics.",
+            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
             "inLanguage": "en",
             "isPartOf": {
               "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
@@ -478,131 +479,205 @@
       <h2>Methods</h2>
 
       <section>
-        <h3>Create</h3>
-        <p>
-          A create operation constructs a new replica from a
-          <a>default struct</a> and an optional <a>snapshot</a>.
-        </p>
-        <p>
-          If a <a>well-formed snapshot</a> is supplied, the replica adopts each
-          well-formed known field state entry from it. Otherwise the replica
-          initializes that field from the default struct and mints fresh UUIDv7
-          state for it.
-        </p>
+        <h3>CRUD</h3>
+
+        <section>
+          <h4>Create</h4>
+          <p>
+            A create operation constructs a new replica from a
+            <a>default struct</a> and an optional <a>snapshot</a>.
+          </p>
+          <p>
+            If a <a>well-formed snapshot</a> is supplied, the replica adopts
+            each well-formed known field state entry from it. Otherwise the
+            replica initializes that field from the default struct and mints
+            fresh UUIDv7 state for it.
+          </p>
+        </section>
+
+        <section>
+          <h4>Read</h4>
+          <p>
+            A read operation returns the current visible <a>field value</a> for
+            a known <a>field key</a>.
+          </p>
+          <p>
+            The reference binding returns a detached clone rather than the live
+            stored value reference.
+          </p>
+        </section>
+
+        <section>
+          <h4>Update</h4>
+          <p>
+            An update operation MUST mint a fresh <a>UUIDv7 identifier</a> for
+            the target <a>field key</a>, make the previously current UUIDv7 the
+            new predecessor identifier, add that predecessor to the overwrite
+            set, and set the <a>field value</a> to the supplied payload.
+          </p>
+          <p>
+            In the reference binding, the payload MUST be
+            <code>structuredClone</code>-compatible and MUST have the same
+            runtime prototype category as the corresponding default value. Every
+            successful local update creates a new per-field <a>delta</a> and a
+            new per-field change event.
+          </p>
+        </section>
+
+        <section>
+          <h4>Delete</h4>
+          <p>
+            In the reference binding, <code>delete()</code> resets fields to
+            their default values. It does not remove the <a>field key</a> from
+            the struct shape.
+          </p>
+          <p>
+            If a key is supplied, only that field is reset. If no key is
+            supplied, every field in the <a>default struct</a> is reset. Unknown
+            explicit keys are ignored.
+          </p>
+        </section>
       </section>
 
       <section>
-        <h3>Read</h3>
-        <p>
-          A read operation returns the current visible <a>field value</a> for a
-          known <a>field key</a>.
-        </p>
+        <h3>MAGS</h3>
+
+        <section>
+          <h4>Merge</h4>
+          <p>
+            Merge operates over a <a>delta</a> or a full <a>snapshot</a>. A
+            conforming implementation MUST process the incoming state one
+            <a>field key</a> at a time.
+          </p>
+          <p>When merging one incoming field state entry:</p>
+          <ol class="algorithm">
+            <li>If the field key is unknown locally, continue.</li>
+            <li>
+              If the incoming value does not parse as a valid field state entry
+              for that key, continue.
+            </li>
+            <li>
+              Merge incoming overwrite knowledge into the local overwrite set
+              before making any winner decision.
+            </li>
+            <li>
+              If the local overwrite set now contains the incoming UUIDv7,
+              continue.
+            </li>
+            <li>
+              If the current and incoming entries share the same UUIDv7, then
+              the incoming entry wins only when its predecessor identifier is
+              lexicographically greater. Otherwise the replica MUST mint a fresh
+              local overwrite using the current visible <a>field value</a> and
+              emit that repair state as <a>delta</a>.
+            </li>
+            <li>
+              Otherwise the incoming entry wins if any of the following is true:
+              its predecessor identifier equals the local current UUIDv7; the
+              local overwrite set already contains the local current UUIDv7; or
+              the incoming UUIDv7 is lexicographically greater than the local
+              current UUIDv7.
+            </li>
+            <li>
+              If the incoming entry does not win, its UUIDv7 MUST be added to
+              the local overwrite set and the local field state MAY be emitted
+              back out as rebuttal <a>delta</a>.
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h4>Acknowledge</h4>
+          <p>
+            An acknowledge operation emits one acknowledgement frontier per
+            known <a>field key</a>.
+          </p>
+          <p>
+            In the reference binding, the acknowledgement frontier for a field
+            is the lexicographically greatest overwritten UUIDv7 currently known
+            for that field.
+          </p>
+        </section>
+
+        <section>
+          <h4>Garbage Collect</h4>
+          <p>
+            A garbage-collection operation accepts a list of acknowledgement
+            frontiers and compacts overwrite history that is already dead.
+          </p>
+          <p>
+            In the reference binding, garbage collection determines the smallest
+            acknowledged UUIDv7 per known key and removes overwritten
+            identifiers that are less than or equal to that frontier, except for
+            the current predecessor identifier named by <code>__after</code>.
+          </p>
+        </section>
+
+        <section>
+          <h4>Snapshot</h4>
+          <p>
+            A <a>snapshot</a> MUST contain enough information to recreate the
+            current field state entry for every known <a>field key</a>.
+          </p>
+          <p>
+            A <a>delta</a> MUST use the same per-field state-entry format as a
+            snapshot but MAY include only a subset of keys.
+          </p>
+        </section>
       </section>
 
       <section>
-        <h3>Update</h3>
-        <p>
-          An update operation MUST mint a fresh <a>UUIDv7 identifier</a> for the
-          target <a>field key</a>, make the previously current UUIDv7 the new
-          predecessor identifier, add that predecessor to the overwrite set, and
-          set the <a>field value</a> to the supplied payload.
-        </p>
-        <p>
-          The reference binding does not compare payload equality before
-          overwriting. Every successful local update creates a new per-field
-          delta and a new per-field change event.
-        </p>
+        <h3>ADDITIONALS</h3>
+
+        <section>
+          <h4>keys(), values(), entries()</h4>
+          <p>
+            These operations expose resolved live state without mutating replica
+            history.
+          </p>
+          <p>
+            In the reference binding, <code>keys()</code> returns the known
+            field keys, <code>values()</code> returns detached clones of the
+            current visible values, and <code>entries()</code> returns key-value
+            pairs whose values are likewise detached clones.
+          </p>
+        </section>
       </section>
 
       <section>
-        <h3>Delete</h3>
-        <p>
-          In the reference binding, <code>delete()</code> resets fields to their
-          default values. It does not remove the <a>field key</a> from the
-          struct shape.
-        </p>
-        <p>
-          If a key is supplied, only that field is reset. If no key is supplied,
-          every field in the <a>default struct</a> is reset. Unknown explicit
-          keys are ignored.
-        </p>
-      </section>
+        <h3>EVENTS</h3>
 
-      <section>
-        <h3>Merge</h3>
-        <p>
-          Merge operates over a <a>delta</a> or a full <a>snapshot</a>. A
-          conforming implementation MUST process the incoming state one
-          <a>field key</a> at a time.
-        </p>
-        <p>When merging one incoming field state entry:</p>
-        <ol class="algorithm">
-          <li>If the field key is unknown locally, continue.</li>
-          <li>
-            If the incoming value does not parse as a valid field state entry
-            for that key, continue.
-          </li>
-          <li>
-            Union the incoming overwrite set into the local overwrite set before
-            making any winner decision.
-          </li>
-          <li>
-            If the local overwrite set now contains the incoming UUIDv7,
-            continue.
-          </li>
-          <li>
-            If the current and incoming entries share the same UUIDv7, then the
-            incoming entry wins only when its predecessor identifier is
-            lexicographically greater. Otherwise the replica MUST mint a fresh
-            local overwrite using the current visible <a>field value</a> and
-            emit that repair state as delta.
-          </li>
-          <li>
-            Otherwise the incoming entry wins if any of the following is true:
-            its predecessor identifier equals the local current UUIDv7; the
-            local overwrite set already contains the local current UUIDv7; or
-            the incoming UUIDv7 is lexicographically greater than the local
-            current UUIDv7.
-          </li>
-          <li>
-            If the incoming entry does not win, its UUIDv7 MUST be added to the
-            local overwrite set and the local field state MAY be emitted back
-            out as rebuttal delta.
-          </li>
-        </ol>
-      </section>
-
-      <section>
-        <h3>Snapshot</h3>
-        <p>
-          A <a>snapshot</a> MUST contain enough information to recreate the
-          current field state entry for every known <a>field key</a>.
-        </p>
-        <p>
-          A <a>delta</a> MUST use the same per-field state-entry format as a
-          snapshot but MAY include only a subset of keys.
-        </p>
+        <section>
+          <h4>addEventListener() and removeEventListener()</h4>
+          <p>
+            These operations forward listener registration and removal to the
+            binding's internal event target.
+          </p>
+          <p>
+            The reference binding defines four synthetic event channels:
+            <code>delta</code>, <code>change</code>, <code>ack</code>, and
+            <code>snapshot</code>.
+          </p>
+        </section>
       </section>
     </section>
 
     <section>
       <h2>Overwrite-Set Compaction</h2>
       <p>
-        Overwrite-set compaction is deployment specific. This specification does
-        not require any particular compaction strategy.
+        The reference binding exposes compaction explicitly through
+        <code>acknowledge()</code> and <code>garbageCollect()</code>.
       </p>
       <p>
-        A deployment MAY compact overwrite knowledge only when it can prove that
-        no later replica synchronization will depend on the removed identifiers
-        to reject stale state.
+        Acknowledgement and garbage collection operate only on identifiers that
+        are already known to be overwritten. They do not remove the current
+        winning UUIDv7 for a field, and they do not remove the current
+        predecessor identifier named by <code>__after</code>.
       </p>
-      <aside class="note">
-        <p>
-          UUIDv7 lexical ordering can make deployment-specific frontier schemes
-          practical, but compaction safety comes from the replication contract,
-          not from ordering alone.
-        </p>
-      </aside>
+      <p>
+        Consequently, compaction can shrink overwrite history without changing
+        the resolved visible live state of the replica.
+      </p>
     </section>
 
     <section class="informative">
@@ -637,7 +712,12 @@ interface OOStruct {
   undefined update(DOMString key, any value);
   undefined delete(optional DOMString key);
   undefined merge(object replica);
+  undefined acknowledge();
+  undefined garbageCollect(sequence&lt;object&gt; frontiers);
   undefined snapshot();
+  object keys();
+  object values();
+  object entries();
   undefined addEventListener(DOMString type, any listener, optional any options);
   undefined removeEventListener(DOMString type, any listener, optional any options);
 };
@@ -650,13 +730,44 @@ dictionary OOStructSnapshotEntry {
 };
         </pre>
         <p>
-          Snapshot, delta, and change payloads are plain JavaScript objects
-          keyed by known fields. The actual payload member names are
+          Snapshot and delta payloads are plain JavaScript objects keyed by
+          known fields. Change payloads are plain JavaScript objects keyed by
+          changed fields, and acknowledgement payloads are plain JavaScript
+          objects keyed by acknowledged fields.
+        </p>
+        <p>
+          The actual field-entry payload member names are
           <code>__uuidv7</code>, <code>__after</code>, <code>__value</code>, and
           <code>__overwrites</code>. The Web IDL above uses IDL-safe member
           names because dictionary members cannot use the double-underscore
           form.
         </p>
+      </section>
+
+      <section>
+        <h3>Errors</h3>
+        <p>
+          The JavaScript binding throws <code>OOStructError</code> with a string
+          <code>code</code> attribute for local API misuse.
+        </p>
+        <dl>
+          <dt><code>DEFAULTS_NOT_CLONEABLE</code></dt>
+          <dd>
+            Thrown when constructor defaults are not supported by
+            <code>structuredClone</code>.
+          </dd>
+          <dt><code>VALUE_NOT_CLONEABLE</code></dt>
+          <dd>
+            Thrown when <a data-link-for="OOStruct">update()</a> receives a
+            value that is not supported by <code>structuredClone</code>.
+          </dd>
+          <dt><code>VALUE_TYPE_MISMATCH</code></dt>
+          <dd>
+            Thrown when <a data-link-for="OOStruct">update()</a> receives a
+            value whose runtime prototype category does not match the
+            corresponding default field value.
+          </dd>
+        </dl>
       </section>
 
       <section>
@@ -672,7 +783,7 @@ dictionary OOStructSnapshotEntry {
           dispatch synthetic events through it.
         </p>
         <p>
-          The JavaScript binding defines three synthetic event types. Each is a
+          The JavaScript binding defines four synthetic event types. Each is a
           <code>CustomEvent</code> object whose <code>detail</code> attribute is
           initialized as described below [[DOM]].
         </p>
@@ -689,6 +800,11 @@ dictionary OOStructSnapshotEntry {
             A <code>CustomEvent</code> whose <code>detail</code> maps changed
             keys to their new visible values.
           </dd>
+          <dt><dfn>ack event</dfn></dt>
+          <dd>
+            A <code>CustomEvent</code> whose <code>detail</code> maps known keys
+            to their current acknowledgement frontier values.
+          </dd>
           <dt><dfn>snapshot event</dfn></dt>
           <dd>
             A <code>CustomEvent</code> whose <code>detail</code> is the full
@@ -703,7 +819,9 @@ dictionary OOStructSnapshotEntry {
           <a>delta event</a> before <a>change event</a>. A merge MUST dispatch
           <a>delta event</a> only when it produces egress delta material and
           MUST dispatch <a>change event</a> only when visible field values
-          change.
+          change. <a data-link-for="OOStruct">acknowledge()</a> MUST dispatch
+          <a>ack event</a>, and <a data-link-for="OOStruct">snapshot()</a> MUST
+          dispatch <a>snapshot event</a>.
         </p>
       </section>
 
@@ -733,9 +851,13 @@ dictionary OOStructSnapshotEntry {
               list, then return failure.
             </li>
             <li>
-              If the candidate value's <code>__value</code> member does not have
-              the same runtime prototype category as the corresponding default
-              value, then return failure.
+              If the candidate value's <code>__value</code> member cannot be
+              copied with <code>structuredClone</code>, then return failure.
+            </li>
+            <li>
+              If the cloned candidate value does not have the same runtime
+              prototype category as the corresponding default value, then return
+              failure.
             </li>
             <li>Let <var>overwrites</var> be a new empty set.</li>
             <li>
@@ -755,8 +877,10 @@ dictionary OOStructSnapshotEntry {
           <h4><dfn>serialize a state entry</dfn></h4>
           <p>
             Return a new snapshot entry whose scalar members equal the field
-            entry and whose <code>__overwrites</code> is a list created from the
-            overwrite set in iteration order.
+            entry, whose <code>__value</code> member is a detached structured
+            clone of the current field value, and whose
+            <code>__overwrites</code> is a list created from the overwrite set
+            in iteration order.
           </p>
         </section>
       </section>
@@ -764,157 +888,318 @@ dictionary OOStructSnapshotEntry {
       <section>
         <h3>Algorithms</h3>
 
-        <section data-dfn-for="OOStruct">
-          <h4><dfn class="lint-ignore">Constructor</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              Shallow-copy <var>defaults</var> as the <a>default struct</a>.
-            </li>
-            <li>Initialize live state and state entries as empty objects.</li>
-            <li>
-              If <var>snapshot</var> is a non-null object and not a list, then
-              for each field key in the default struct attempt to
-              <a>parse a snapshot entry</a> from the matching incoming value. If
-              parsing succeeds, adopt that entry.
-            </li>
-            <li>
-              For every field key not adopted from the incoming snapshot, set
-              the live value to the default value and create a fresh current
-              field entry with a fresh <code>__uuidv7</code>, a fresh synthetic
-              root in <code>__after</code>, and an overwrite set containing only
-              that synthetic root.
-            </li>
-          </ol>
+        <section>
+          <h4>CRUD</h4>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">Constructor</dfn></h5>
+            <ol class="algorithm">
+              <li>
+                Attempt to copy <var>defaults</var> with
+                <code>structuredClone</code>.
+              </li>
+              <li>
+                If copying fails, throw <code>OOStructError</code> with code
+                <code>DEFAULTS_NOT_CLONEABLE</code>.
+              </li>
+              <li>Store the cloned defaults as the <a>default struct</a>.</li>
+              <li>Initialize live state and state entries as empty objects.</li>
+              <li>
+                If <var>snapshot</var> is a record, then for each field key in
+                the default struct attempt to <a>parse a snapshot entry</a> from
+                the matching incoming value. If parsing succeeds, adopt that
+                entry.
+              </li>
+              <li>
+                For every field key not adopted from the incoming snapshot, set
+                the live value to the default value and create a fresh current
+                field entry with a fresh <code>__uuidv7</code>, a fresh
+                synthetic root in <code>__after</code>, and an overwrite set
+                containing only that synthetic root.
+              </li>
+            </ol>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">create()</dfn></h5>
+            <p>
+              Return a new <code>OOStruct</code> constructed from the arguments.
+            </p>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">read()</dfn></h5>
+            <p>
+              Return a detached structured clone of the current visible value
+              for key.
+            </p>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn>update()</dfn></h5>
+            <ol class="algorithm">
+              <li>
+                Attempt to copy the supplied value with
+                <code>structuredClone</code>.
+              </li>
+              <li>
+                If copying fails, throw <code>OOStructError</code> with code
+                <code>VALUE_NOT_CLONEABLE</code>.
+              </li>
+              <li>
+                If the copied value does not have the same runtime prototype
+                category as the corresponding default value, throw
+                <code>OOStructError</code> with code
+                <code>VALUE_TYPE_MISMATCH</code>.
+              </li>
+              <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
+              <li>Let <var>changes</var> be a new empty changes object.</li>
+              <li>
+                Mint a fresh UUIDv7 for key, move the previous UUIDv7 into
+                <code>__after</code> and <code>__overwrites</code>, and set the
+                field's current value to the copied payload.
+              </li>
+              <li>
+                Set <var>delta</var>[key] to the result of
+                <a>serialize a state entry</a> on the current field entry.
+              </li>
+              <li>
+                Set <var>changes</var>[key] to a detached structured clone of
+                the copied payload.
+              </li>
+              <li>
+                Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
+              </li>
+              <li>
+                Dispatch a <a>change event</a> whose detail is
+                <var>changes</var>.
+              </li>
+            </ol>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn>delete()</dfn></h5>
+            <ol class="algorithm">
+              <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
+              <li>Let <var>changes</var> be a new empty changes object.</li>
+              <li>
+                If key is not <code>undefined</code> and is unknown in the
+                default struct, then return.
+              </li>
+              <li>
+                If key is provided, overwrite that field with its default value
+                and record the result in <var>delta</var> and
+                <var>changes</var>.
+              </li>
+              <li>
+                Otherwise, for each field in the default struct, overwrite that
+                field with its default value and record the results in
+                <var>delta</var> and <var>changes</var>.
+              </li>
+              <li>
+                Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
+              </li>
+              <li>
+                Dispatch a <a>change event</a> whose detail is
+                <var>changes</var>.
+              </li>
+            </ol>
+          </section>
         </section>
 
-        <section data-dfn-for="OOStruct">
-          <h4><dfn class="lint-ignore">create()</dfn></h4>
-          <p>
-            Return a new <code>OOStruct</code> constructed from the arguments.
-          </p>
+        <section>
+          <h4>MAGS</h4>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">merge()</dfn></h5>
+            <ol class="algorithm">
+              <li>If replica is null, not an object, or a list, return.</li>
+              <li>Let outgoing delta and changes be empty objects.</li>
+              <li>
+                Let <var>hasDelta</var> and <var>hasChange</var> be false.
+              </li>
+              <li>
+                For each own key in the incoming replica:
+                <ol>
+                  <li>If the key is unknown locally, continue.</li>
+                  <li>
+                    Parse the candidate entry. If parsing fails, continue.
+                  </li>
+                  <li>Let <var>target</var> be the local field state entry.</li>
+                  <li>
+                    Let <var>current</var> be a copy of <var>target</var>.
+                  </li>
+                  <li>
+                    Let <var>frontier</var> be the lexicographically greatest
+                    identifier currently in <var>target</var>'s overwrite set,
+                    or the empty string if the set is empty.
+                  </li>
+                  <li>
+                    For each overwrite in the candidate overwrite set, if the
+                    overwrite is less than or equal to <var>frontier</var> or is
+                    already present locally, continue; otherwise add it to
+                    <var>target</var>'s overwrite set.
+                  </li>
+                  <li>
+                    If <var>target</var>'s overwrite set now contains the
+                    candidate UUIDv7, continue.
+                  </li>
+                  <li>
+                    If <var>current</var> and the candidate share the same UUID,
+                    then:
+                    <ol>
+                      <li>
+                        If <var>current</var>'s predecessor identifier is
+                        lexicographically less than the candidate predecessor
+                        identifier, then adopt the candidate value and
+                        predecessor, add that predecessor to the overwrite set,
+                        update live state, write a detached clone into outgoing
+                        changes, set <var>hasChange</var> to true, and continue.
+                      </li>
+                      <li>
+                        Otherwise, mint a fresh local overwrite using the
+                        current visible value, place the resulting serialized
+                        entry in outgoing delta, set <var>hasDelta</var> to
+                        true, and continue.
+                      </li>
+                    </ol>
+                  </li>
+                  <li>
+                    Otherwise, if any of the following is true, adopt the
+                    candidate: the local current UUID equals the candidate
+                    predecessor identifier; the local overwrite set already
+                    contains the local current UUID; or the candidate UUID is
+                    lexicographically greater than the local current UUID.
+                  </li>
+                  <li>
+                    When the candidate is adopted, set the target UUID, value,
+                    and predecessor to the candidate values; add the candidate
+                    predecessor and previous local current UUID to the overwrite
+                    set; update live state; write a detached clone into outgoing
+                    changes; set <var>hasChange</var> to true; and continue.
+                  </li>
+                  <li>
+                    Otherwise add the candidate UUID to the local overwrite set,
+                    place the serialized local state entry in outgoing delta,
+                    and set <var>hasDelta</var> to true.
+                  </li>
+                </ol>
+              </li>
+              <li>
+                If <var>hasDelta</var> is true, dispatch <a>delta event</a>.
+              </li>
+              <li>
+                If <var>hasChange</var> is true, dispatch <a>change event</a>.
+              </li>
+            </ol>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">acknowledge()</dfn></h5>
+            <ol class="algorithm">
+              <li>Let <var>ack</var> be a new empty acknowledgement object.</li>
+              <li>
+                For each local field state entry, compute the lexicographically
+                greatest overwritten identifier presently known for that field.
+              </li>
+              <li>
+                Set the corresponding key in <var>ack</var> to that identifier.
+              </li>
+              <li>
+                Dispatch an <a>ack event</a> whose detail is <var>ack</var>.
+              </li>
+            </ol>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">garbageCollect()</dfn></h5>
+            <ol class="algorithm">
+              <li>
+                If <var>frontiers</var> is not a list or is empty, return.
+              </li>
+              <li>
+                Let <var>smallestAcknowledgementsPerKey</var> be a new empty
+                acknowledgement object.
+              </li>
+              <li>
+                For each frontier in <var>frontiers</var>, and for each own
+                entry in that frontier:
+                <ol>
+                  <li>If the key is unknown locally, continue.</li>
+                  <li>
+                    If the value is not a valid <a>UUIDv7 identifier</a>,
+                    continue.
+                  </li>
+                  <li>
+                    If there is already a stored acknowledgement for that key
+                    and it is less than or equal to the incoming value,
+                    continue.
+                  </li>
+                  <li>
+                    Otherwise replace the stored acknowledgement for that key
+                    with the incoming value.
+                  </li>
+                </ol>
+              </li>
+              <li>
+                For each acknowledged key in
+                <var>smallestAcknowledgementsPerKey</var>, remove every
+                overwritten identifier in the local field state entry that is
+                less than or equal to the stored acknowledgement, except the
+                field's current predecessor identifier.
+              </li>
+            </ol>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">snapshot()</dfn></h5>
+            <p>
+              Run <a>serialize a state entry</a> on every current field entry,
+              assemble the results into a full <a>snapshot</a>, and dispatch a
+              <a>snapshot event</a>. The method returns <code>undefined</code>.
+            </p>
+          </section>
         </section>
 
-        <section data-dfn-for="OOStruct">
-          <h4><dfn class="lint-ignore">read()</dfn></h4>
-          <p>Return the current visible value for key.</p>
+        <section>
+          <h4>ADDITIONALS</h4>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">keys()</dfn></h5>
+            <p>Return the known field keys from live state.</p>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">values()</dfn></h5>
+            <p>
+              Return detached structured clones of the current visible field
+              values.
+            </p>
+          </section>
+
+          <section data-dfn-for="OOStruct">
+            <h5><dfn class="lint-ignore">entries()</dfn></h5>
+            <p>
+              Return key-value pairs where each value is a detached structured
+              clone of the current visible field value.
+            </p>
+          </section>
         </section>
 
-        <section data-dfn-for="OOStruct">
-          <h4><dfn>update()</dfn></h4>
-          <ol class="algorithm">
-            <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
-            <li>Let <var>changes</var> be a new empty changes object.</li>
-            <li>
-              Mint a fresh UUIDv7 for key, move the previous UUIDv7 into
-              <code>__after</code> and <code>__overwrites</code>, and set the
-              field's current value to the supplied payload.
-            </li>
-            <li>
-              Set <var>delta</var>[key] to the result of
-              <a>serialize a state entry</a> on the current field entry.
-            </li>
-            <li>Set <var>changes</var>[key] to the supplied payload.</li>
-            <li>
-              Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
-            </li>
-            <li>
-              Dispatch a <a>change event</a> whose detail is <var>changes</var>.
-            </li>
-          </ol>
-        </section>
+        <section>
+          <h4>EVENTS</h4>
 
-        <section data-dfn-for="OOStruct">
-          <h4><dfn>delete()</dfn></h4>
-          <ol class="algorithm">
-            <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
-            <li>Let <var>changes</var> be a new empty changes object.</li>
-            <li>
-              If key is not <code>undefined</code> and is unknown in the default
-              struct, then return.
-            </li>
-            <li>
-              If key is provided, overwrite that field with its default value
-              and record the result in <var>delta</var> and <var>changes</var>.
-            </li>
-            <li>
-              Otherwise, for each field in the default struct, overwrite that
-              field with its default value and record the results in
-              <var>delta</var> and <var>changes</var>.
-            </li>
-            <li>
-              Dispatch a <a>delta event</a> whose detail is <var>delta</var>.
-            </li>
-            <li>
-              Dispatch a <a>change event</a> whose detail is <var>changes</var>.
-            </li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="OOStruct">
-          <h4><dfn class="lint-ignore">merge()</dfn></h4>
-          <ol class="algorithm">
-            <li>If replica is null, not an object, or a list, return.</li>
-            <li>Let outgoing delta and changes be empty objects.</li>
-            <li>
-              For each own key in the incoming replica:
-              <ol>
-                <li>If the key is unknown locally, continue.</li>
-                <li>Parse the candidate entry. If parsing fails, continue.</li>
-                <li>
-                  Union the candidate overwrite set into the local target.
-                </li>
-                <li>
-                  If the target overwrite set now contains the candidate UUID,
-                  continue.
-                </li>
-                <li>
-                  If current and candidate share the same UUID, then adopt the
-                  candidate only when the candidate <code>__after</code> is
-                  lexicographically greater; otherwise create a fresh local
-                  overwrite with the current visible value and place that entry
-                  in outgoing delta by applying <a>serialize a state entry</a>.
-                </li>
-                <li>
-                  Otherwise, adopt the candidate when any of the following is
-                  true: current UUID equals candidate <code>__after</code>; the
-                  local target already knows the current UUID is overwritten; or
-                  the candidate UUID is lexicographically greater than the
-                  current UUID.
-                </li>
-                <li>
-                  If the candidate is not adopted, add its UUID to the local
-                  overwrite set and place the result of
-                  <a>serialize a state entry</a> on the local state in outgoing
-                  delta.
-                </li>
-              </ol>
-            </li>
-            <li>
-              If outgoing delta is non-empty, dispatch <a>delta event</a>.
-            </li>
-            <li>If changes is non-empty, dispatch <a>change event</a>.</li>
-          </ol>
-        </section>
-
-        <section data-dfn-for="OOStruct">
-          <h4><dfn class="lint-ignore">snapshot()</dfn></h4>
-          <p>
-            Run <a>serialize a state entry</a> on every current field entry,
-            assemble the results into a full <a>snapshot</a>, and dispatch a
-            <a>snapshot event</a>. The method returns <code>undefined</code>.
-          </p>
-        </section>
-
-        <section data-dfn-for="OOStruct">
-          <h4>
-            <dfn class="lint-ignore">addEventListener()</dfn> and
-            <dfn class="lint-ignore">removeEventListener()</dfn>
-          </h4>
-          <p>
-            Forward listener registration and listener removal to the binding's
-            internal <code>EventTarget</code> object using the provided type,
-            listener, and options values.
-          </p>
+          <section data-dfn-for="OOStruct">
+            <h5>
+              <dfn class="lint-ignore">addEventListener()</dfn> and
+              <dfn class="lint-ignore">removeEventListener()</dfn>
+            </h5>
+            <p>
+              Forward listener registration and listener removal to the
+              binding's internal <code>EventTarget</code> object using the
+              provided type, listener, and options values.
+            </p>
+          </section>
         </section>
       </section>
     </section>
