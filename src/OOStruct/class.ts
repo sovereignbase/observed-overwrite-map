@@ -15,11 +15,24 @@ import { parseSnapshotEntryToStateEntry } from './parseSnapshotEntryToStateEntry
 import { parseStateEntryToSnapshotEntry } from './parseStateEntryToSnapshotEntry/index.js'
 import { isUuidV7, prototype, safeStructuredClone } from '@sovereignbase/utils'
 
+/**
+ * Represents an observed-overwrite struct replica.
+ *
+ * The struct shape is fixed by the provided default values.
+ */
 export class OOStruct<T extends Record<string, unknown>> {
   private readonly __eventTarget = new EventTarget()
   private readonly __defaults: T
   private readonly __state: OOStructState<T>
   private __live: T
+
+  /**
+   * Creates a replica from default values and an optional snapshot.
+   *
+   * @param defaults - The default field values that define the struct shape.
+   * @param snapshot - An optional serialized snapshot used for hydration.
+   * @throws {OOStructError} Thrown when the default values are not supported by `structuredClone`.
+   */
   constructor(
     defaults: { [K in keyof T]: T[K] },
     snapshot?: OOStructSnapshot<T>
@@ -27,8 +40,8 @@ export class OOStruct<T extends Record<string, unknown>> {
     const [cloned, copiedDefaults] = safeStructuredClone(defaults)
     if (!cloned)
       throw new OOStructError(
-        'NOT_CLONABLE',
-        'Only values supported by structuredClone are accepted.'
+        'DEFAULTS_NOT_CLONEABLE',
+        'Default values must be supported by structuredClone.'
       )
     this.__defaults = copiedDefaults
     this.__state = {} as OOStructState<T>
@@ -61,6 +74,13 @@ export class OOStruct<T extends Record<string, unknown>> {
   }
 
   /**CRUD*/
+  /**
+   * Creates a new replica.
+   *
+   * @param defaults - The default field values that define the struct shape.
+   * @param snapshot - An optional serialized snapshot used for hydration.
+   * @returns A new OO-Struct replica.
+   */
   static create<T extends Record<string, unknown>>(
     defaults: { [K in keyof T]: T[K] },
     snapshot?: OOStructSnapshot<T>
@@ -68,22 +88,36 @@ export class OOStruct<T extends Record<string, unknown>> {
     return new OOStruct(defaults, snapshot)
   }
 
+  /**
+   * Reads the current value of a field.
+   *
+   * @param key - The field key to read.
+   * @returns A cloned copy of the field's current value.
+   */
   read<K extends keyof T>(key: K): T[K] {
     return structuredClone(this.__live[key])
   }
 
+  /**
+   * Overwrites a field with a new value.
+   *
+   * @param key - The field key to overwrite.
+   * @param value - The next value for the field.
+   * @throws {OOStructError} Thrown when the value is not supported by `structuredClone`.
+   * @throws {OOStructError} Thrown when the value runtime type does not match the default value runtime type.
+   */
   update<K extends keyof T>(key: K, value: T[K]): void {
     const [cloned, copiedValue] = safeStructuredClone(value)
     if (!cloned)
       throw new OOStructError(
-        'NOT_CLONABLE',
-        'Only values supported by structuredClone are accepted.'
+        'VALUE_NOT_CLONEABLE',
+        'Updated values must be supported by structuredClone.'
       )
 
     if (prototype(copiedValue) !== prototype(this.__defaults[key]))
       throw new OOStructError(
-        'TYPE_MISMATCH',
-        'Values type does not match default values type.'
+        'VALUE_TYPE_MISMATCH',
+        'Updated value must match the default value runtime type.'
       )
     const delta: OOStructDelta<T> = {}
     const change: OOStructChange<T> = {}
@@ -97,6 +131,11 @@ export class OOStruct<T extends Record<string, unknown>> {
     )
   }
 
+  /**
+   * Resets one field or the entire struct back to default values.
+   *
+   * @param key - The optional field key to reset. When omitted, every field is reset.
+   */
   delete<K extends keyof T>(key?: K): void {
     const delta: OOStructDelta<T> = {}
     const change: OOStructChange<T> = {}
@@ -124,21 +163,28 @@ export class OOStruct<T extends Record<string, unknown>> {
   }
 
   /**MAGS*/
+  /**
+   * Merges an incoming delta into the current replica.
+   *
+   * @param replica - The incoming partial snapshot projection to merge.
+   */
   merge<K extends keyof T>(replica: OOStructDelta<T>): void {
     if (!replica || typeof replica !== 'object' || Array.isArray(replica))
       return
 
     const delta: OOStructDelta<T> = {}
     const change: OOStructChange<T> = {}
+    let hasDelta = false
+    let hasChange = false
 
     for (const [key, value] of Object.entries(replica)) {
       if (!Object.hasOwn(this.__state, key)) continue
 
-      const canditate = parseSnapshotEntryToStateEntry(
+      const candidate = parseSnapshotEntryToStateEntry(
         this.__defaults[key as K],
         value as OOStructSnapshotEntry<T[K]>
       )
-      if (!canditate) continue
+      if (!candidate) continue
 
       const target = this.__state[key as K]
       const current = { ...target }
@@ -147,57 +193,64 @@ export class OOStruct<T extends Record<string, unknown>> {
         if (floor < overwrite) floor = overwrite
       }
 
-      for (const overwrite of canditate.__overwrites) {
+      for (const overwrite of candidate.__overwrites) {
         if (overwrite <= floor || target.__overwrites.has(overwrite)) continue
         target.__overwrites.add(overwrite)
       }
 
-      if (target.__overwrites.has(canditate.__uuidv7)) continue
+      if (target.__overwrites.has(candidate.__uuidv7)) continue
 
-      if (current.__uuidv7 === canditate.__uuidv7) {
-        if (current.__after < canditate.__after) {
-          target.__value = canditate.__value
-          target.__after = canditate.__after
-          target.__overwrites.add(canditate.__after)
-          this.__live[key as K] = canditate.__value
-          change[key as K] = structuredClone(canditate.__value)
+      if (current.__uuidv7 === candidate.__uuidv7) {
+        if (current.__after < candidate.__after) {
+          target.__value = candidate.__value
+          target.__after = candidate.__after
+          target.__overwrites.add(candidate.__after)
+          this.__live[key as K] = candidate.__value
+          change[key as K] = structuredClone(candidate.__value)
+          hasChange = true
         } else {
           delta[key as K] = this.overwriteAndReturnSnapshotEntry(
             key as K,
             current.__value
           )
+          hasDelta = true
         }
         continue
       }
 
       if (
-        current.__uuidv7 === canditate.__after ||
+        current.__uuidv7 === candidate.__after ||
         target.__overwrites.has(current.__uuidv7) ||
-        canditate.__uuidv7 > current.__uuidv7
+        candidate.__uuidv7 > current.__uuidv7
       ) {
-        target.__uuidv7 = canditate.__uuidv7
-        target.__value = canditate.__value
-        target.__after = canditate.__after
-        target.__overwrites.add(canditate.__after)
+        target.__uuidv7 = candidate.__uuidv7
+        target.__value = candidate.__value
+        target.__after = candidate.__after
+        target.__overwrites.add(candidate.__after)
         target.__overwrites.add(current.__uuidv7)
-        this.__live[key as K] = canditate.__value
-        change[key as K] = structuredClone(canditate.__value)
+        this.__live[key as K] = candidate.__value
+        change[key as K] = structuredClone(candidate.__value)
+        hasChange = true
         continue
       }
 
-      target.__overwrites.add(canditate.__uuidv7)
+      target.__overwrites.add(candidate.__uuidv7)
       delta[key as K] = parseStateEntryToSnapshotEntry(target)
+      hasDelta = true
     }
-    if (Object.keys(delta).length > 0)
+    if (hasDelta)
       this.__eventTarget.dispatchEvent(
         new CustomEvent('delta', { detail: delta })
       )
-    if (Object.keys(change).length > 0)
+    if (hasChange)
       this.__eventTarget.dispatchEvent(
         new CustomEvent('change', { detail: change })
       )
   }
 
+  /**
+   * Emits the current acknowledgement frontier for each field.
+   */
   acknowledge<K extends Extract<keyof T, string>>(): void {
     const ack: OOStructAck<T> = {}
     for (const [key, value] of Object.entries(this.__state)) {
@@ -211,6 +264,11 @@ export class OOStruct<T extends Record<string, unknown>> {
     this.__eventTarget.dispatchEvent(new CustomEvent('ack', { detail: ack }))
   }
 
+  /**
+   * Removes overwritten identifiers that every provided frontier has acknowledged.
+   *
+   * @param frontiers - A collection of acknowledgement frontiers to compact against.
+   */
   garbageCollect<K extends Extract<keyof T, string>>(
     frontiers: Array<OOStructAck<T>>
   ): void {
@@ -237,6 +295,9 @@ export class OOStruct<T extends Record<string, unknown>> {
     }
   }
 
+  /**
+   * Emits a serialized snapshot of the current replica state.
+   */
   snapshot(): void {
     const snapshot = {} as OOStructSnapshot<T>
 
@@ -253,16 +314,31 @@ export class OOStruct<T extends Record<string, unknown>> {
 
   /**ADDITIONAL*/
 
+  /**
+   * Returns the struct field keys.
+   *
+   * @returns The field keys in the current replica.
+   */
   keys<K extends keyof T>(): Array<K> {
     return Object.keys(this.__live) as Array<K>
   }
 
+  /**
+   * Returns cloned copies of the current field values.
+   *
+   * @returns The current field values.
+   */
   values<K extends keyof T>(): Array<T[K]> {
     return Object.values(this.__live).map((value) =>
       structuredClone(value)
     ) as Array<T[K]>
   }
 
+  /**
+   * Returns cloned key-value pairs for the current replica state.
+   *
+   * @returns The current field entries.
+   */
   entries<K extends keyof T>(): Array<[K, T[K]]> {
     return Object.entries(this.__live).map(([key, value]) => [
       key as K,
@@ -312,6 +388,13 @@ export class OOStruct<T extends Record<string, unknown>> {
 
   /**HELPERS*/
 
+  /**
+   * Overwrites a field and returns the serialized delta entry for that overwrite.
+   *
+   * @param key - The field key to overwrite.
+   * @param value - The next value for the field.
+   * @returns The serialized snapshot entry for the new winning value.
+   */
   private overwriteAndReturnSnapshotEntry<K extends keyof T>(
     key: K,
     value: T[K]

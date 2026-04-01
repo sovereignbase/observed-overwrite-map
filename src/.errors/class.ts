@@ -1,5 +1,14 @@
-export type OOStructErrorCode = 'TYPE_MISMATCH' | 'NOT_CLONABLE'
+/**
+ * Error codes thrown by {@link OOStruct}.
+ */
+export type OOStructErrorCode =
+  | 'DEFAULTS_NOT_CLONEABLE'
+  | 'VALUE_NOT_CLONEABLE'
+  | 'VALUE_TYPE_MISMATCH'
 
+/**
+ * Represents a typed OO-Struct runtime error.
+ */
 export class OOStructError extends Error {
   readonly code: OOStructErrorCode
 
