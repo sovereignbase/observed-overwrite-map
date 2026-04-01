@@ -31,6 +31,8 @@ TypeScript: bundled types / source TS / etc.
 
 4. Goals
 
+NEVER THROWS AN ERROR!
+
 3–6 bullets, phrased as outcomes:
 
 “Developer-friendly API…”

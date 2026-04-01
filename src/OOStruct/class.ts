@@ -8,7 +8,6 @@ import type {
   OOStructSnapshotEntry,
   OOStructState,
   OOStructStateEntry,
-  OOStructAcknowledgementFrontier,
   OOStructAck,
 } from '../.types/index.js'
 import { parseSnapshotEntryToStateEntry } from './parseSnapshotEntryToStateEntry/index.js'
@@ -141,6 +140,7 @@ export class OOStruct<T extends Record<string, unknown>> {
         if (current.__after < canditate.__after) {
           target.__value = canditate.__value
           target.__after = canditate.__after
+          target.__overwrites.add(canditate.__after)
           this.__live[key as K] = canditate.__value
           change[key as K] = canditate.__value
         } else {
@@ -160,6 +160,7 @@ export class OOStruct<T extends Record<string, unknown>> {
         target.__uuidv7 = canditate.__uuidv7
         target.__value = canditate.__value
         target.__after = canditate.__after
+        target.__overwrites.add(canditate.__after)
         target.__overwrites.add(current.__uuidv7)
         this.__live[key as K] = canditate.__value
         change[key as K] = canditate.__value
