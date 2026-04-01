@@ -211,11 +211,10 @@ export class OOStruct<T extends Record<string, unknown>> {
     frontiers: Array<OOStructAcknowledgementFrontier<K>>
   ): void {
     if (!Array.isArray(frontiers) || frontiers.length < 1) return
-    const smallestAcknowledgementsPerKey = {
-      ...frontiers[0],
-    } as OOStructAcknowledgementFrontier<K>
+    const smallestAcknowledgementsPerKey =
+      frontiers.pop() as OOStructAcknowledgementFrontier<K>
 
-    for (const frontier of frontiers.slice(1)) {
+    for (const frontier of frontiers) {
       for (const [key, value] of Object.entries(frontier)) {
         if (typeof value === 'string') {
           if (smallestAcknowledgementsPerKey[key as K] <= value) continue
