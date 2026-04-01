@@ -3,6 +3,12 @@ import type {
   OOStructSnapshotEntry,
 } from '../../.types/index.js'
 
+/**
+ * Serializes a field state entry into a snapshot entry.
+ *
+ * @param stateEntry - The internal state entry to serialize.
+ * @returns The serialized snapshot entry.
+ */
 export function parseStateEntryToSnapshotEntry<K>(
   stateEntry: OOStructStateEntry<K>
 ): OOStructSnapshotEntry<K> {

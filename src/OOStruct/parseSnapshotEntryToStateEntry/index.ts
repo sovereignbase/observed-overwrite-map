@@ -3,6 +3,16 @@ import type {
   OOStructStateEntry,
 } from '../../.types/index.js'
 import { isUuidV7, prototype, safeStructuredClone } from '@sovereignbase/utils'
+
+/**
+ * Validates and converts a serialized field entry into internal replica state.
+ *
+ * Invalid entries are rejected by returning `false`.
+ *
+ * @param defaultValue - The default value for the field used for runtime type comparison.
+ * @param snapshotEntry - The serialized entry to validate and parse.
+ * @returns The parsed state entry, or `false` when the entry is invalid.
+ */
 export function parseSnapshotEntryToStateEntry<V>(
   defaultValue: V,
   snapshotEntry: OOStructSnapshotEntry<V>
