@@ -1,6 +1,6 @@
 import { v7 as uuidv7 } from 'uuid'
 import type {
-  OOStructChanges,
+  OOStructChange,
   OOStructDelta,
   OOStructEventListenerFor,
   OOStructEventMap,
@@ -9,6 +9,7 @@ import type {
   OOStructState,
   OOStructStateEntry,
   OOStructAcknowledgementFrontier,
+  OOStructAck,
 } from '../.types/index.js'
 import { parseSnapshotEntryToStateEntry } from './parseSnapshotEntryToStateEntry/index.js'
 import { parseStateEntryToSnapshotEntry } from './parseStateEntryToSnapshotEntry/index.js'
@@ -67,40 +68,40 @@ export class OOStruct<T extends Record<string, unknown>> {
 
   update<K extends keyof T>(key: K, value: T[K]): void {
     const delta: OOStructDelta<T> = {}
-    const changes: OOStructChanges<T> = {}
+    const change: OOStructChange<T> = {}
     delta[key] = this.overwriteAndReturnSnapshotEntry(key, value)
-    changes[key] = value
+    change[key] = value
     this.__eventTarget.dispatchEvent(
       new CustomEvent('delta', { detail: delta })
     )
     this.__eventTarget.dispatchEvent(
-      new CustomEvent('change', { detail: changes })
+      new CustomEvent('change', { detail: change })
     )
   }
 
   delete<K extends keyof T>(key?: K): void {
     const delta: OOStructDelta<T> = {}
-    const changes: OOStructChanges<T> = {}
+    const change: OOStructChange<T> = {}
 
     if (key !== undefined) {
       if (!Object.hasOwn(this.__defaults, key)) return
       const value = this.__defaults[key]
       delta[key] = this.overwriteAndReturnSnapshotEntry(key, value)
-      changes[key] = value
+      change[key] = value
     } else {
       for (const [key, value] of Object.entries(this.__defaults)) {
         delta[key as K] = this.overwriteAndReturnSnapshotEntry(
           key as K,
           value as T[K]
         )
-        changes[key as K] = value as T[K]
+        change[key as K] = value as T[K]
       }
     }
     this.__eventTarget.dispatchEvent(
       new CustomEvent('delta', { detail: delta })
     )
     this.__eventTarget.dispatchEvent(
-      new CustomEvent('change', { detail: changes })
+      new CustomEvent('change', { detail: change })
     )
   }
 
@@ -110,7 +111,7 @@ export class OOStruct<T extends Record<string, unknown>> {
       return
 
     const delta: OOStructDelta<T> = {}
-    const changes: OOStructChanges<T> = {}
+    const change: OOStructChange<T> = {}
 
     for (const [key, value] of Object.entries(replica)) {
       if (!Object.hasOwn(this.__state, key)) continue
@@ -136,7 +137,7 @@ export class OOStruct<T extends Record<string, unknown>> {
           target.__value = canditate.__value
           target.__after = canditate.__after
           this.__live[key as K] = canditate.__value
-          changes[key as K] = canditate.__value
+          change[key as K] = canditate.__value
         } else {
           delta[key as K] = this.overwriteAndReturnSnapshotEntry(
             key as K,
@@ -155,7 +156,7 @@ export class OOStruct<T extends Record<string, unknown>> {
         target.__value = canditate.__value
         target.__after = canditate.__after
         this.__live[key as K] = canditate.__value
-        changes[key as K] = canditate.__value
+        change[key as K] = canditate.__value
         continue
       }
 
@@ -166,23 +167,23 @@ export class OOStruct<T extends Record<string, unknown>> {
       this.__eventTarget.dispatchEvent(
         new CustomEvent('delta', { detail: delta })
       )
-    if (Object.keys(changes).length > 0)
+    if (Object.keys(change).length > 0)
       this.__eventTarget.dispatchEvent(
-        new CustomEvent('change', { detail: changes })
+        new CustomEvent('change', { detail: change })
       )
   }
 
   acknowledge<K extends Extract<keyof T, string>>(): void {
-    const acks: Partial<OOStructAcknowledgementFrontier<K>> = {}
+    const ack: OOStructAck<T> = {}
     for (const [key, value] of Object.entries(this.__state)) {
       let max = ''
       for (const overwrite of (value as OOStructStateEntry<T[K]>)
         .__overwrites) {
         if (max < overwrite) max = overwrite
       }
-      acks[key as K] = max
+      ack[key as K] = max
     }
-    this.__eventTarget.dispatchEvent(new CustomEvent('ack', { detail: acks }))
+    this.__eventTarget.dispatchEvent(new CustomEvent('ack', { detail: ack }))
   }
 
   garbageCollect<K extends Extract<keyof T, string>>(
