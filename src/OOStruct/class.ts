@@ -34,8 +34,7 @@ export class OOStruct<T extends Record<string, unknown>> {
     this.__state = {} as OOStructState<T>
     this.__live = {} as T
 
-    const snapshotIsObject =
-      snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot)
+    const snapshotIsObject = snapshot && prototype(snapshot) === 'record'
 
     for (const key of Object.keys(this.__defaults)) {
       const defaultValue = this.__defaults[key as keyof T]
