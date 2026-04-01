@@ -196,42 +196,25 @@ export class OOStruct<T extends Record<string, unknown>> {
     frontiers: Array<OOStructAcknowledgementFrontier<K>>
   ): void {
     if (!Array.isArray(frontiers) || frontiers.length < 1) return
-    const smallestAcknowledgementsPerKey =
-      frontiers.pop() as OOStructAcknowledgementFrontier<K>
+    const smallestAcknowledgementsPerKey: OOStructAck<T> = {}
 
     for (const frontier of frontiers) {
       for (const [key, value] of Object.entries(frontier)) {
-        if (
-          !Object.hasOwn(this.__state, key) ||
-          typeof value !== 'string' ||
-          !isUuidV7(value)
-        )
-          continue
+        if (!Object.hasOwn(this.__state, key) || !isUuidV7(value)) continue
 
         const current = smallestAcknowledgementsPerKey[key as K]
-        if (
-          typeof current === 'string' &&
-          isUuidV7(current) &&
-          current <= value
-        )
-          continue
+        if (typeof current === 'string' && current <= value) continue
         smallestAcknowledgementsPerKey[key as K] = value
       }
     }
 
     for (const [key, value] of Object.entries(smallestAcknowledgementsPerKey)) {
-      if (
-        !Object.hasOwn(this.__state, key) ||
-        typeof value !== 'string' ||
-        !isUuidV7(value)
-      )
-        continue
-
       const target = this.__state[key]
-      target.__overwrites.forEach((uuidv7, _, overwrites) => {
-        if (uuidv7 === target.__after || uuidv7 > value) return
-        overwrites.delete(uuidv7)
-      })
+      const smallest = value as string
+      for (const uuidv7 of target.__overwrites) {
+        if (uuidv7 === target.__after || uuidv7 > smallest) continue
+        target.__overwrites.delete(uuidv7)
+      }
     }
   }
 
