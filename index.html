@@ -627,7 +627,7 @@
       </section>
 
       <section>
-        <h3>ADDITIONALS</h3>
+        <h3>Additional</h3>
 
         <section>
           <h4>keys(), values(), entries()</h4>
@@ -643,23 +643,6 @@
           </p>
         </section>
       </section>
-
-      <section>
-        <h3>EVENTS</h3>
-
-        <section>
-          <h4>addEventListener() and removeEventListener()</h4>
-          <p>
-            These operations forward listener registration and removal to the
-            binding's internal event target.
-          </p>
-          <p>
-            The reference binding defines four synthetic event channels:
-            <code>delta</code>, <code>change</code>, <code>ack</code>, and
-            <code>snapshot</code>.
-          </p>
-        </section>
-      </section>
     </section>
 
     <section>
@@ -672,7 +655,7 @@
         Acknowledgement and garbage collection operate only on identifiers that
         are already known to be overwritten. They do not remove the current
         winning UUIDv7 for a field, and they do not remove the current
-        predecessor identifier named by <code>__after</code>.
+        predecessor identifier named by <code>after</code>.
       </p>
       <p>
         Consequently, compaction can shrink overwrite history without changing
@@ -802,8 +785,11 @@ dictionary OOStructSnapshotEntry {
           </dd>
           <dt><dfn>ack event</dfn></dt>
           <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> maps known keys
-            to their current acknowledgement frontier values.
+            A <code>CustomEvent</code> whose <code>detail</code> is the known
+            keys and to their current acknowledgement frontier values produced
+            when
+            <a data-link-for="OOStruct">acknowledge()</a>
+            is invoked.
           </dd>
           <dt><dfn>snapshot event</dfn></dt>
           <dd>
@@ -1162,7 +1148,7 @@ dictionary OOStructSnapshotEntry {
         </section>
 
         <section>
-          <h4>ADDITIONALS</h4>
+          <h4>Additional</h4>
 
           <section data-dfn-for="OOStruct">
             <h5><dfn class="lint-ignore">keys()</dfn></h5>
@@ -1187,7 +1173,7 @@ dictionary OOStructSnapshotEntry {
         </section>
 
         <section>
-          <h4>EVENTS</h4>
+          <h4>EventTarget</h4>
 
           <section data-dfn-for="OOStruct">
             <h5>

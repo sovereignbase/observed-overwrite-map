@@ -5,7 +5,7 @@
 
 # observed-overwrite-struct
 
-State-based CRDT for fixed-key object structs where each field keeps one visible value, a UUIDv7 winner identifier, and overwrite history for deterministic merge resolution. It is designed for eventually consistent replicas that want a small API, detached payloads, and explicit acknowledgement and garbage-collection primitives without turning every field into a separate general-purpose CRDT.
+State-based CRDT for fixed-key object structs with per-field overwrite tracking.
 
 ## Compatibility
 
