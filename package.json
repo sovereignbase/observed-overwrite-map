@@ -1,8 +1,8 @@
 {
   "type": "module",
   "license": "Apache-2.0",
-  "name": "@sovereignbase/observed-overwrite-struct",
-  "version": "1.0.0",
+  "name": "@sovereignbase/convergent-replicated-struct",
+  "version": "0.0.0",
   "description": "State-based CRDT for fixed-key object structs with per-field overwrite tracking.",
   "keywords": [
     "crdt",
@@ -10,8 +10,8 @@
     "eventual-consistency",
     "local-first",
     "replication",
-    "observed-overwrite-struct",
-    "oo-struct",
+    "convergent-replicated-struct",
+    "cr-struct",
     "uuidv7",
     "lww-register",
     "delta",
@@ -80,10 +80,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sovereignbase/observed-overwrite-struct.git"
+    "url": "git+https://github.com/sovereignbase/convergent-replicated-struct.git"
   },
   "bugs": {
-    "url": "https://github.com/sovereignbase/observed-overwrite-struct/issues"
+    "url": "https://github.com/sovereignbase/convergent-replicated-struct/issues"
   },
-  "homepage": "https://sovereignbase.github.io/observed-overwrite-struct"
+  "homepage": "https://sovereignbase.github.io/convergent-replicated-struct"
 }
