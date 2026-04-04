@@ -1,9 +1,9 @@
-[![npm version](https://img.shields.io/npm/v/@sovereignbase/observed-overwrite-struct)](https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct)
-[![CI](https://github.com/sovereignbase/observed-overwrite-struct/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/observed-overwrite-struct/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/sovereignbase/observed-overwrite-struct/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/observed-overwrite-struct)
-[![license](https://img.shields.io/npm/l/@sovereignbase/observed-overwrite-struct)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/@sovereignbase/convergent-replicated-struct)](https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct)
+[![CI](https://github.com/sovereignbase/convergent-replicated-struct/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/convergent-replicated-struct/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/sovereignbase/convergent-replicated-struct/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/convergent-replicated-struct)
+[![license](https://img.shields.io/npm/l/@sovereignbase/convergent-replicated-struct)](LICENSE)
 
-# observed-overwrite-struct
+# convergent-replicated-struct
 
 State-based CRDT for fixed-key object structs with per-field overwrite tracking.
 
@@ -26,17 +26,17 @@ State-based CRDT for fixed-key object structs with per-field overwrite tracking.
 ## Installation
 
 ```sh
-npm install @sovereignbase/observed-overwrite-struct
+npm install @sovereignbase/convergent-replicated-struct
 # or
-pnpm add @sovereignbase/observed-overwrite-struct
+pnpm add @sovereignbase/convergent-replicated-struct
 # or
-yarn add @sovereignbase/observed-overwrite-struct
+yarn add @sovereignbase/convergent-replicated-struct
 # or
-bun add @sovereignbase/observed-overwrite-struct
+bun add @sovereignbase/convergent-replicated-struct
 # or
-deno add jsr:@sovereignbase/observed-overwrite-struct
+deno add jsr:@sovereignbase/convergent-replicated-struct
 # or
-vlt install jsr:@sovereignbase/observed-overwrite-struct
+vlt install jsr:@sovereignbase/convergent-replicated-struct
 ```
 
 ## Usage
@@ -44,7 +44,7 @@ vlt install jsr:@sovereignbase/observed-overwrite-struct
 ### Copy-paste example
 
 ```ts
-import { OOStruct } from '@sovereignbase/observed-overwrite-struct'
+import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
 
 type TodoStruct = {
   title: string
@@ -80,7 +80,7 @@ console.log(bob.read('meta')) // { done: true }
 import {
   OOStruct,
   type OOStructSnapshot,
-} from '@sovereignbase/observed-overwrite-struct'
+} from '@sovereignbase/convergent-replicated-struct'
 
 type DraftStruct = {
   title: string
@@ -118,7 +118,7 @@ console.log(restored.entries()) // [['title', 'draft'], ['count', 0]]
 ### Event channels
 
 ```ts
-import { OOStruct } from '@sovereignbase/observed-overwrite-struct'
+import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
 
 const replica = new OOStruct({
   name: '',
@@ -148,7 +148,7 @@ replica.addEventListener('snapshot', (event) => {
 import {
   OOStruct,
   type OOStructAck,
-} from '@sovereignbase/observed-overwrite-struct'
+} from '@sovereignbase/convergent-replicated-struct'
 
 type CounterStruct = {
   title: string
