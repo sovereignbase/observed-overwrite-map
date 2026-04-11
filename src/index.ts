@@ -1,31 +1,33 @@
 /**
- * The OO-Struct replica implementation.
+ * The CR-Struct replica implementation.
  */
-export { OOStruct } from './OOStruct/class.js'
+export { CRStruct } from './CRStruct/class.js'
 
 /**
- * The public OO-Struct error code union.
+ * The public CR-Struct error code union.
  */
-export type { OOStructErrorCode } from './.errors/class.js'
+export type { CRStructErrorCode } from './.errors/class.js'
 
 /**
- * Public OO-Struct types.
+ * Public CR-Struct types.
  */
 export type {
-  OOStructEventMap,
-  OOStructEventListener,
-  OOStructEventListenerFor,
+  CRStructEventMap,
+  CRStructEventListener,
+  CRStructEventListenerFor,
   /***/
-  OOStructState,
-  OOStructStateEntry,
+  CRStructState,
+  CRStructStateEntry,
   /***/
-  OOStructSnapshot,
-  OOStructSnapshotEntry,
+  CRStructSnapshot,
+  CRStructSnapshotEntry,
   /***/
-  OOStructChange,
+  CRStructChange,
   /***/
-  OOStructDelta,
-  OOStructAck,
-  /***/
-  OOStructAcknowledgementFrontier,
+  CRStructDelta,
+  CRStructAck,
 } from './.types/index.js'
+
+/**
+ * Public advanced exports, CR-Struct primitives.
+ */

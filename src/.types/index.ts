@@ -3,33 +3,33 @@
 /**
  * Represents the internal replicated state for a single field.
  */
-export type OOStructStateEntry<V> = {
+export type CRStructStateEntry<V> = {
   /**
    * The identifier of the current winning value.
    */
-  __uuidv7: string
+  uuidv7: string
 
   /**
    * The current winning value.
    */
-  __value: V
+  value: V
 
   /**
    * The predecessor identifier for the current winning value.
    */
-  __after: string
+  predecessor: string
 
   /**
    * Identifiers known to have been overwritten for the field.
    */
-  __overwrites: Set<string>
+  tombstones: Set<string>
 }
 
 /**
  * Represents the internal replicated state of an OO-Struct replica.
  */
-export type OOStructState<T extends Record<string, unknown>> = {
-  [K in keyof T]: OOStructStateEntry<T[K]>
+export type CRStructState<T extends Record<string, unknown>> = {
+  [K in keyof T]: CRStructStateEntry<T[K]>
 }
 
 /**Serlialized projection of replica state*/
@@ -37,33 +37,33 @@ export type OOStructState<T extends Record<string, unknown>> = {
 /**
  * Represents the serialized state for a single field.
  */
-export type OOStructSnapshotEntry<V> = {
+export type CRStructSnapshotEntry<V> = {
   /**
    * The identifier of the current winning value.
    */
-  __uuidv7: string
+  uuidv7: string
 
   /**
    * The serialized current winning value.
    */
-  __value: V
+  value: V
 
   /**
    * The predecessor identifier for the current winning value.
    */
-  __after: string
+  predecessor: string
 
   /**
    * Serialized overwritten identifiers for the field.
    */
-  __overwrites: Array<string>
+  tombstones: Array<string>
 }
 
 /**
  * Represents a serialized snapshot of the full replica state.
  */
-export type OOStructSnapshot<T extends Record<string, unknown>> = {
-  [K in keyof T]: OOStructSnapshotEntry<T[K]>
+export type CRStructSnapshot<T extends Record<string, unknown>> = {
+  [K in keyof T]: CRStructSnapshotEntry<T[K]>
 }
 
 /**Resolved projection of replica state*/
@@ -71,33 +71,25 @@ export type OOStructSnapshot<T extends Record<string, unknown>> = {
 /**
  * Represents visible field values that changed during a local operation or merge.
  */
-export type OOStructChange<T extends Record<string, unknown>> = Partial<T>
+export type CRStructChange<T extends Record<string, unknown>> = Partial<T>
 /**(T)*/
-
-/**A "report" on what the replica has seen*/
-
-/**
- * Represents the acknowledgement frontier for a set of field keys.
- */
-export type OOStructAcknowledgementFrontier<K extends string> = Record<
-  K,
-  string
->
 
 /**Partial changes to gossip*/
 
 /**
  * Represents a partial serialized state projection exchanged between replicas.
  */
-export type OOStructDelta<T extends Record<string, unknown>> = Partial<
-  OOStructSnapshot<T>
+export type CRStructDelta<T extends Record<string, unknown>> = Partial<
+  CRStructSnapshot<T>
 >
+
+/**A "report" on what the replica has seen*/
 
 /**
  * Represents the current acknowledgement frontier emitted by a replica.
  */
-export type OOStructAck<T extends Record<string, unknown>> = Partial<
-  OOStructAcknowledgementFrontier<Extract<keyof T, string>>
+export type CRStructAck<T extends Record<string, unknown>> = Partial<
+  Record<keyof T, string>
 >
 
 /***/
@@ -105,32 +97,32 @@ export type OOStructAck<T extends Record<string, unknown>> = Partial<
 /**
  * Maps OO-Struct event names to their event payload shapes.
  */
-export type OOStructEventMap<T extends Record<string, unknown>> = {
+export type CRStructEventMap<T extends Record<string, unknown>> = {
   /** STATE / PROJECTION */
-  snapshot: OOStructSnapshot<T>
-  change: OOStructChange<T>
+  snapshot: CRStructSnapshot<T>
+  change: CRStructChange<T>
 
   /** GOSSIP / PROTOCOL */
-  delta: OOStructDelta<T>
-  ack: OOStructAck<T>
+  delta: CRStructDelta<T>
+  ack: CRStructAck<T>
 }
 
 /**
  * Represents a strongly typed OO-Struct event listener.
  */
-export type OOStructEventListener<
+export type CRStructEventListener<
   T extends Record<string, unknown>,
-  K extends keyof OOStructEventMap<T>,
+  K extends keyof CRStructEventMap<T>,
 > =
-  | ((event: CustomEvent<OOStructEventMap<T>[K]>) => void)
-  | { handleEvent(event: CustomEvent<OOStructEventMap<T>[K]>): void }
+  | ((event: CustomEvent<CRStructEventMap<T>[K]>) => void)
+  | { handleEvent(event: CustomEvent<CRStructEventMap<T>[K]>): void }
 
 /**
  * Resolves an event name to its corresponding listener type.
  */
-export type OOStructEventListenerFor<
+export type CRStructEventListenerFor<
   T extends Record<string, unknown>,
   K extends string,
-> = K extends keyof OOStructEventMap<T>
-  ? OOStructEventListener<T, K>
+> = K extends keyof CRStructEventMap<T>
+  ? CRStructEventListener<T, K>
   : EventListenerOrEventListenerObject

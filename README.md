@@ -1,27 +1,25 @@
-[![npm version](https://img.shields.io/npm/v/@sovereignbase/convergent-replicated-struct)](https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct)
+[![npm version](https://img.shields.io/npm/v/@sovereignbase/convergent-replicated-list)](https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct)
 [![CI](https://github.com/sovereignbase/convergent-replicated-struct/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/sovereignbase/convergent-replicated-struct/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/sovereignbase/convergent-replicated-struct/branch/master/graph/badge.svg)](https://codecov.io/gh/sovereignbase/convergent-replicated-struct)
 [![license](https://img.shields.io/npm/l/@sovereignbase/convergent-replicated-struct)](LICENSE)
 
 # convergent-replicated-struct
 
-State-based CRDT for fixed-key object structs with per-field overwrite tracking.
+Convergent Replicated Struct (CR-Struct), a delta CRDT for an fixed-key object structs.
 
 ## Compatibility
 
-- Runtimes: Node >= 20; modern browsers; Bun; Deno; Cloudflare Workers; Edge Runtime.
+- Runtimes: Node >= 20, modern browsers, Bun, Deno, Cloudflare Workers, Edge Runtime.
 - Module format: ESM + CommonJS.
 - Required globals / APIs: `EventTarget`, `CustomEvent`, `structuredClone`.
 - TypeScript: bundled types.
 
 ## Goals
 
-- Fixed-key replica shape defined by a default struct.
-- One visible value per field at any time.
-- Malformed ingress is ignored during hydration and merge instead of crashing the replica.
-- `read()`, `values()`, `entries()`, snapshots, deltas, and change payloads are detached with `structuredClone`.
-- Explicit `acknowledge()` and `garbageCollect()` APIs for overwrite-history compaction.
-- Consistent behavior across Node, browsers, and worker/edge runtimes.
+- Deterministic convergence of the live struct projection under asynchronous gossip delivery.
+- Consistent behavior across Node, browsers, worker, and edge runtimes.
+- Garbage collection possibility without breaking live-view convergence.
+- Event-driven API
 
 ## Installation
 
@@ -44,7 +42,7 @@ vlt install jsr:@sovereignbase/convergent-replicated-struct
 ### Copy-paste example
 
 ```ts
-import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
+import { CRStruct } from '@sovereignbase/convergent-replicated-struct'
 
 type TodoStruct = {
   title: string
@@ -53,13 +51,13 @@ type TodoStruct = {
   tags: string[]
 }
 
-const alice = OOStruct.create<TodoStruct>({
+const alice = CRStruct.create<TodoStruct>({
   title: '',
   count: 0,
   meta: { done: false },
   tags: [],
 })
-const bob = OOStruct.create<TodoStruct>({
+const bob = CRStruct.create<TodoStruct>({
   title: '',
   count: 0,
   meta: { done: false },
@@ -78,8 +76,8 @@ console.log(bob.read('meta')) // { done: true }
 
 ```ts
 import {
-  OOStruct,
-  type OOStructSnapshot,
+  CRStruct,
+  type CRStructSnapshot,
 } from '@sovereignbase/convergent-replicated-struct'
 
 type DraftStruct = {
@@ -87,11 +85,11 @@ type DraftStruct = {
   count: number
 }
 
-const source = new OOStruct<DraftStruct>({
+const source = new CRStruct<DraftStruct>({
   title: '',
   count: 0,
 })
-let snapshot!: OOStructSnapshot<DraftStruct>
+let snapshot!: CRStructSnapshot<DraftStruct>
 
 source.addEventListener(
   'snapshot',
@@ -104,7 +102,7 @@ source.addEventListener(
 source.update('title', 'draft')
 source.snapshot()
 
-const restored = OOStruct.create<DraftStruct>(
+const restored = CRStruct.create<DraftStruct>(
   {
     title: '',
     count: 0,
@@ -118,9 +116,9 @@ console.log(restored.entries()) // [['title', 'draft'], ['count', 0]]
 ### Event channels
 
 ```ts
-import { OOStruct } from '@sovereignbase/convergent-replicated-struct'
+import { CRStruct } from '@sovereignbase/convergent-replicated-struct'
 
-const replica = new OOStruct({
+const replica = new CRStruct({
   name: '',
   count: 0,
 })
@@ -146,8 +144,8 @@ replica.addEventListener('snapshot', (event) => {
 
 ```ts
 import {
-  OOStruct,
-  type OOStructAck,
+  CRStruct,
+  type CRStructAck,
 } from '@sovereignbase/convergent-replicated-struct'
 
 type CounterStruct = {
@@ -155,16 +153,16 @@ type CounterStruct = {
   count: number
 }
 
-const left = new OOStruct<CounterStruct>({
+const left = new CRStruct<CounterStruct>({
   title: '',
   count: 0,
 })
-const right = new OOStruct<CounterStruct>({
+const right = new CRStruct<CounterStruct>({
   title: '',
   count: 0,
 })
 
-const frontiers: Array<OOStructAck<CounterStruct>> = []
+const frontiers: Array<CRStructAck<CounterStruct>> = []
 
 left.addEventListener(
   'ack',
@@ -193,7 +191,7 @@ right.garbageCollect(frontiers)
 
 ### Validation and errors
 
-Local API misuse throws `OOStructError` with stable error codes:
+Local API misuse throws `CRStructError` with stable error codes:
 
 - `DEFAULTS_NOT_CLONEABLE`
 - `VALUE_NOT_CLONEABLE`

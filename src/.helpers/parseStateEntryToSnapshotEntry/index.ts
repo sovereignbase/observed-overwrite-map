@@ -1,6 +1,6 @@
 import type {
-  OOStructStateEntry,
-  OOStructSnapshotEntry,
+  CRStructStateEntry,
+  CRStructSnapshotEntry,
 } from '../../.types/index.js'
 
 /**
@@ -10,12 +10,12 @@ import type {
  * @returns The serialized snapshot entry.
  */
 export function parseStateEntryToSnapshotEntry<K>(
-  stateEntry: OOStructStateEntry<K>
-): OOStructSnapshotEntry<K> {
+  stateEntry: CRStructStateEntry<K>
+): CRStructSnapshotEntry<K> {
   return {
-    __uuidv7: stateEntry.__uuidv7,
-    __value: structuredClone(stateEntry.__value),
-    __after: stateEntry.__after,
-    __overwrites: Array.from(stateEntry.__overwrites),
+    uuidv7: stateEntry.uuidv7,
+    value: structuredClone(stateEntry.value),
+    predecessor: stateEntry.predecessor,
+    tombstones: Array.from(stateEntry.tombstones),
   }
 }

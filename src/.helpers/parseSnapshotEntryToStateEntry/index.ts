@@ -1,6 +1,6 @@
 import type {
-  OOStructSnapshotEntry,
-  OOStructStateEntry,
+  CRStructSnapshotEntry,
+  CRStructStateEntry,
 } from '../../.types/index.js'
 import { isUuidV7, prototype, safeStructuredClone } from '@sovereignbase/utils'
 
@@ -15,38 +15,38 @@ import { isUuidV7, prototype, safeStructuredClone } from '@sovereignbase/utils'
  */
 export function parseSnapshotEntryToStateEntry<V>(
   defaultValue: V,
-  snapshotEntry: OOStructSnapshotEntry<V>
-): OOStructStateEntry<V> | false {
+  snapshotEntry: CRStructSnapshotEntry<V>
+): CRStructStateEntry<V> | false {
   if (
     prototype(snapshotEntry) !== 'record' ||
-    !Object.hasOwn(snapshotEntry, '__value') ||
-    !isUuidV7(snapshotEntry.__uuidv7) ||
-    !isUuidV7(snapshotEntry.__after) ||
-    !Array.isArray(snapshotEntry.__overwrites)
+    !Object.hasOwn(snapshotEntry, 'value') ||
+    !isUuidV7(snapshotEntry.uuidv7) ||
+    !isUuidV7(snapshotEntry.predecessor) ||
+    !Array.isArray(snapshotEntry.tombstones)
   )
     return false
 
-  const [cloned, copiedValue] = safeStructuredClone(snapshotEntry.__value)
+  const [cloned, copiedValue] = safeStructuredClone(snapshotEntry.value)
   if (!cloned || prototype(copiedValue) !== prototype(defaultValue))
     return false
 
-  const overwrites = new Set<string>([])
-  for (const overwrite of snapshotEntry.__overwrites) {
+  const tombstones = new Set<string>([])
+  for (const overwrite of snapshotEntry.tombstones) {
     if (
       !isUuidV7(overwrite) ||
       overwrite ===
-        snapshotEntry.__uuidv7 /**if it was actually overwritten the current uuid would be different so this must be malicious*/
+        snapshotEntry.uuidv7 /**if it was actually overwritten the current uuid would be different so this must be malicious*/
     )
       continue
-    overwrites.add(overwrite)
+    tombstones.add(overwrite)
   }
 
-  if (!overwrites.has(snapshotEntry.__after)) return false
+  if (!tombstones.has(snapshotEntry.predecessor)) return false
 
   return {
-    __uuidv7: snapshotEntry.__uuidv7,
-    __value: copiedValue,
-    __after: snapshotEntry.__after,
-    __overwrites: overwrites,
+    uuidv7: snapshotEntry.uuidv7,
+    value: copiedValue,
+    predecessor: snapshotEntry.predecessor,
+    tombstones: tombstones,
   }
 }

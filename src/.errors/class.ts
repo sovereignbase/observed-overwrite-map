@@ -1,30 +1,30 @@
 /**
  * Error codes thrown by {@link OOStruct}.
  */
-export type OOStructErrorCode =
+export type CRStructErrorCode =
   | 'DEFAULTS_NOT_CLONEABLE'
   | 'VALUE_NOT_CLONEABLE'
   | 'VALUE_TYPE_MISMATCH'
 
 /**
- * Represents a typed OO-Struct runtime error.
+ * Represents a typed CR-Struct runtime error.
  */
-export class OOStructError extends Error {
+export class CRStructError extends Error {
   /**
    * The semantic error code for the failure.
    */
-  readonly code: OOStructErrorCode
+  readonly code: CRStructErrorCode
 
   /**
-   * Creates a typed OO-Struct error.
+   * Creates a typed CR-Struct error.
    *
    * @param code - The semantic error code.
    * @param message - An optional human-readable detail message.
    */
-  constructor(code: OOStructErrorCode, message?: string) {
+  constructor(code: CRStructErrorCode, message?: string) {
     const detail = message ?? code
-    super(`{@sovereignbase/observed-overwrite-struct} ${detail}`)
+    super(`{@sovereignbase/convergent-replicated-struct} ${detail}`)
     this.code = code
-    this.name = 'OOStructError'
+    this.name = 'CRStructError'
   }
 }

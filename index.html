@@ -3,76 +3,76 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Observed Overwrite Struct (OO-Struct) CRDT Specification</title>
+    <title>Convergent Replicated Struct (CR-Struct)</title>
     <meta
       name="description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
+      content="Specification and reference JavaScript binding for a state-based convergent replicated structCRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       name="keywords"
-      content="observed overwrite struct, oo-struct, crdt, uuidv7, replication, delta, snapshot, acknowledgement, garbage collection, javascript, typescript"
+      content="observed overwrite struct, cr-struct, crdt, uuidv7, replication, delta, snapshot, acknowledgement, garbage collection, javascript, typescript"
     />
     <meta name="author" content="Jori Lehtinen" />
     <meta
       name="robots"
       content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
     />
-    <meta name="application-name" content="observed-overwrite-struct" />
+    <meta name="application-name" content="convergent-replicated-struct" />
     <link
       rel="canonical"
-      href="https://sovereignbase.github.io/observed-overwrite-struct/"
+      href="https://sovereignbase.dev/convergent-replicated-struct/"
     />
     <link
       rel="icon"
       type="image/png"
-      href="https://sovereignbase.github.io/sovereignbase_logo.png"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
     />
     <link
       rel="apple-touch-icon"
-      href="https://sovereignbase.github.io/sovereignbase_logo.png"
+      href="https://sovereignbase.dev/sovereignbase_logo.png"
     />
     <meta property="og:type" content="article" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="Sovereignbase" />
     <meta
       property="og:title"
-      content="Observed Overwrite Struct (OO-Struct) CRDT Specification"
+      content="Convergent Replicated Struct (CR-Struct)"
     />
     <meta
       property="og:description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
+      content="Specification and reference JavaScript binding for a state-based convergent replicated structCRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       property="og:url"
-      content="https://sovereignbase.github.io/observed-overwrite-struct/"
+      content="https://sovereignbase.dev/convergent-replicated-struct/"
     />
     <meta
       property="og:image"
-      content="https://sovereignbase.github.io/sovereignbase_social_sharing_image.png"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
     />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Sovereignbase social sharing image for the observed overwrite struct specification."
+      content="Sovereignbase social sharing image for the convergent replicated structspecification."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Observed Overwrite Struct (OO-Struct) CRDT Specification"
+      content="Convergent Replicated Struct (CR-Struct)"
     />
     <meta
       name="twitter:description"
-      content="Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
+      content="Specification and reference JavaScript binding for a state-based convergent replicated structCRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection."
     />
     <meta
       name="twitter:image"
-      content="https://sovereignbase.github.io/sovereignbase_social_sharing_image.png"
+      content="https://sovereignbase.dev/sovereignbase_social_sharing_image.png"
     />
     <meta
       name="twitter:image:alt"
-      content="Sovereignbase social sharing image for the observed overwrite struct specification."
+      content="Sovereignbase social sharing image for the convergent replicated structspecification."
     />
     <meta name="twitter:creator" content="@jortsupetterson" />
     <script
@@ -83,8 +83,8 @@
     <script class="remove">
       var respecConfig = {
         specStatus: 'unofficial',
-        shortName: 'observed-overwrite-struct',
-        github: 'sovereignbase/observed-overwrite-struct',
+        shortName: 'convergent-replicated-struct',
+        github: 'sovereignbase/convergent-replicated-struct',
         latestVersion: null,
         edDraftURI: null,
         editors: [
@@ -135,13 +135,13 @@
         "@graph": [
           {
             "@type": "Organization",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization",
             "name": "Sovereignbase",
             "url": "https://github.com/sovereignbase",
             "alternateName": ["@sovereignbase"],
             "logo": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/sovereignbase_logo.png",
+              "url": "https://sovereignbase.dev/sovereignbase_logo.png",
               "width": 320,
               "height": 320
             },
@@ -153,7 +153,7 @@
           },
           {
             "@type": "Person",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#author",
             "name": "Jori Lehtinen",
             "url": "https://github.com/jortsupetterson",
             "alternateName": ["jortsupetterson", "@jortsupetterson"],
@@ -168,22 +168,22 @@
           },
           {
             "@type": "WebSite",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website",
-            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
-            "name": "observed-overwrite-struct",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#website",
+            "url": "https://sovereignbase.dev/convergent-replicated-struct/",
+            "name": "convergent-replicated-struct",
             "inLanguage": "en",
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization"
             }
           },
           {
             "@type": "SoftwareSourceCode",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software",
-            "name": "@sovereignbase/observed-overwrite-struct",
-            "alternateName": ["observed-overwrite-struct", "oo-struct"],
-            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#software",
+            "name": "@sovereignbase/convergent-replicated-struct",
+            "alternateName": ["convergent-replicated-struct", "cr-struct"],
+            "url": "https://sovereignbase.dev/convergent-replicated-struct/",
             "description": "State-based CRDT for fixed-key object structs with UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
-            "codeRepository": "https://github.com/sovereignbase/observed-overwrite-struct",
+            "codeRepository": "https://github.com/sovereignbase/convergent-replicated-struct",
             "license": "https://www.apache.org/licenses/LICENSE-2.0",
             "programmingLanguage": ["TypeScript", "JavaScript"],
             "runtimePlatform": [
@@ -196,82 +196,82 @@
             ],
             "keywords": [
               "crdt",
-              "observed-overwrite-struct",
-              "oo-struct",
+              "convergent-replicated-struct",
+              "cr-struct",
               "uuidv7",
               "replication",
               "overwrite-tracking",
               "acknowledgement",
               "garbage-collection"
             ],
-            "image": "https://sovereignbase.github.io/sovereignbase_social_sharing_image.png",
+            "image": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
             "isAccessibleForFree": true,
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#author"
             },
             "maintainer": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization"
             },
             "sameAs": [
-              "https://jsr.io/@sovereignbase/observed-overwrite-struct/",
-              "https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct"
+              "https://jsr.io/@sovereignbase/convergent-replicated-struct/",
+              "https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct"
             ]
           },
           {
             "@type": "TechArticle",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#specification",
-            "headline": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
-            "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
-            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
-            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#specification",
+            "headline": "convergent replicated struct(CR-Struct)",
+            "name": "convergent replicated struct(CR-Struct)",
+            "url": "https://sovereignbase.dev/convergent-replicated-struct/",
+            "description": "Specification and reference JavaScript binding for a state-based convergent replicated structCRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
             "inLanguage": "en",
             "isPartOf": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#website"
             },
             "mainEntityOfPage": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#webpage"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#webpage"
             },
             "about": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#software"
             },
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#author"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization"
             },
             "image": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/sovereignbase_social_sharing_image.png",
+              "url": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
               "width": 1200,
               "height": 630
             }
           },
           {
             "@type": "WebPage",
-            "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#webpage",
-            "url": "https://sovereignbase.github.io/observed-overwrite-struct/",
-            "name": "Observed Overwrite Struct (OO-Struct) CRDT Specification",
-            "description": "Specification and reference JavaScript binding for a state-based observed overwrite struct CRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
+            "@id": "https://sovereignbase.dev/convergent-replicated-struct/#webpage",
+            "url": "https://sovereignbase.dev/convergent-replicated-struct/",
+            "name": "convergent replicated struct(CR-Struct)",
+            "description": "Specification and reference JavaScript binding for a state-based convergent replicated structCRDT with fixed keys, UUIDv7 field versions, overwrite tracking, delta propagation, acknowledgement frontiers, and garbage collection.",
             "inLanguage": "en",
             "isPartOf": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#website"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#website"
             },
             "about": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#software"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#software"
             },
             "author": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#author"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#author"
             },
             "publisher": {
-              "@id": "https://sovereignbase.github.io/observed-overwrite-struct/#organization"
+              "@id": "https://sovereignbase.dev/convergent-replicated-struct/#organization"
             },
             "primaryImageOfPage": {
               "@type": "ImageObject",
-              "url": "https://sovereignbase.github.io/sovereignbase_social_sharing_image.png",
+              "url": "https://sovereignbase.dev/sovereignbase_social_sharing_image.png",
               "width": 1200,
               "height": 630
             },
@@ -279,9 +279,9 @@
               "https://github.com/sovereignbase",
               "https://jsr.io/@sovereignbase",
               "https://www.npmjs.com/org/sovereignbase",
-              "https://github.com/sovereignbase/observed-overwrite-struct",
-              "https://jsr.io/@sovereignbase/observed-overwrite-struct/",
-              "https://www.npmjs.com/package/@sovereignbase/observed-overwrite-struct",
+              "https://github.com/sovereignbase/convergent-replicated-struct",
+              "https://jsr.io/@sovereignbase/convergent-replicated-struct/",
+              "https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct",
               "https://github.com/jortsupetterson",
               "https://www.npmjs.com/~jortsupetterson",
               "https://jsr.io/user/ab186a13-a64f-429e-a757-927aa4fa6e6c",
@@ -297,7 +297,7 @@
   <body>
     <section id="abstract">
       <p>
-        This document specifies Observed Overwrite Struct (OO-Struct), a
+        This document specifies convergent replicated struct(CR-Struct), a
         state-based CRDT for fixed-key object structs. Each field maintains one
         visible value together with authoritative knowledge of overwritten
         UUIDv7 identifiers. The specification defines the data model, merge
@@ -335,11 +335,11 @@
     <section class="informative">
       <h2>Introduction</h2>
       <p>
-        OO-Struct is designed for static object shapes where keys are known up
+        CR-Struct is designed for static object shapes where keys are known up
         front and each key keeps one visible value of a stable runtime kind.
       </p>
       <p>
-        OO-Struct is informed by map CRDTs with observed-remove semantics
+        CR-Struct is informed by map CRDTs with observed-remove semantics
         [[RIAKDTMAP]] [[DELTACRDTS]] and by LWW-register-style one-visible-
         winner conflict resolution [[CRDTOVERVIEW]], but it is not an OR-Map or
         a plain last-writer-wins register. Its field set is fixed by the default
@@ -372,7 +372,7 @@
     <section>
       <h2>Terminology</h2>
       <p>
-        An <dfn>OO-Struct replica</dfn> is one independently mutable instance of
+        An <dfn>CR-Struct replica</dfn> is one independently mutable instance of
         the data type.
       </p>
       <p>
@@ -422,7 +422,7 @@
 
     <section>
       <h2>Core Model</h2>
-      <p>Each <a>OO-Struct replica</a> maintains two logical objects:</p>
+      <p>Each <a>CR-Struct replica</a> maintains two logical objects:</p>
       <ul>
         <li>
           a live struct keyed by <a>field key</a>, containing the visible
@@ -456,7 +456,7 @@
     <section>
       <h2>UUIDv7 Identifier Requirements</h2>
       <p>
-        A conforming OO-Struct implementation MUST assign one valid
+        A conforming CR-Struct implementation MUST assign one valid
         <a>UUIDv7 identifier</a> to each current <a>field state entry</a>.
       </p>
       <p>
@@ -672,7 +672,7 @@
     <section class="informative">
       <h2>Payload Guidance</h2>
       <p>
-        OO-Struct is best suited to static object shapes whose fields hold
+        CR-Struct is best suited to static object shapes whose fields hold
         stable runtime kinds. It is not, by itself, a field-level CRDT for
         recursively mutating nested object graphs.
       </p>
