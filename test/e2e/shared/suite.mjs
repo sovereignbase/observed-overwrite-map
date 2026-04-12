@@ -5,6 +5,7 @@ export async function runCRStructSuite(api, options = {}) {
     label = 'runtime',
     stressRounds = 12,
     includeStress = false,
+    verbose = false,
   } = options
   const results = { label, ok: true, errors: [], tests: [] }
   const {
@@ -18,6 +19,7 @@ export async function runCRStructSuite(api, options = {}) {
     __snapshot,
     __update,
   } = api
+  const fields = ['name', 'count', 'meta', 'tags']
 
   function assert(condition, message) {
     if (!condition) throw new Error(message || 'assertion failed')
@@ -112,6 +114,37 @@ export async function runCRStructSuite(api, options = {}) {
     return replica.clone()
   }
 
+  function tombstoneCount(snapshot) {
+    return Object.values(snapshot).reduce(
+      (total, entry) => total + entry.tombstones.length,
+      0
+    )
+  }
+
+  function hostilePayload(step) {
+    return step % 4 === 0
+      ? { name: null }
+      : step % 4 === 1
+        ? {
+            name: {
+              uuidv7: 'bad',
+              predecessor: 'bad',
+              value: 'x',
+              tombstones: [],
+            },
+          }
+        : step % 4 === 2
+          ? {
+              count: {
+                uuidv7: 'bad',
+                predecessor: 'bad',
+                value: 'bad',
+                tombstones: [],
+              },
+            }
+          : { ghost: { uuidv7: 'bad' } }
+  }
+
   function nextValue(field, step, replicaIndex) {
     switch (field) {
       case 'name':
@@ -137,6 +170,195 @@ export async function runCRStructSuite(api, options = {}) {
     }
   }
 
+  function shuffled(values, seed) {
+    const next = values.slice()
+    const rand = random(seed)
+    for (let index = next.length - 1; index > 0; index--) {
+      const other = Math.floor(rand() * (index + 1))
+      ;[next[index], next[other]] = [next[other], next[index]]
+    }
+    return next
+  }
+
+  function shuffledIndices(length, seed) {
+    return shuffled(
+      Array.from({ length }, (_, index) => index),
+      seed
+    )
+  }
+
+  function settleReplicaSnapshots(replicas, rounds, seed, options = {}) {
+    const { restartEveryRound = 0 } = options
+
+    for (let round = 0; round < rounds; round++) {
+      const snapshots = replicas.map((replica) => readSnapshot(replica))
+      const deliveries = []
+
+      for (let sourceIndex = 0; sourceIndex < snapshots.length; sourceIndex++) {
+        for (
+          let targetIndex = 0;
+          targetIndex < replicas.length;
+          targetIndex++
+        ) {
+          if (sourceIndex === targetIndex) continue
+          deliveries.push({ sourceIndex, targetIndex })
+        }
+      }
+
+      for (const deliveryIndex of shuffledIndices(
+        deliveries.length,
+        seed + round
+      )) {
+        const { sourceIndex, targetIndex } = deliveries[deliveryIndex]
+        replicas[targetIndex].merge(snapshots[sourceIndex])
+      }
+
+      if (restartEveryRound > 0 && (round + 1) % restartEveryRound === 0) {
+        const restartIndex = (seed + round) % replicas.length
+        replicas[restartIndex] = createReplica(
+          readSnapshot(replicas[restartIndex])
+        )
+      }
+    }
+  }
+
+  function runRandomReplicaScenario(seed, options = {}) {
+    const {
+      replicaCount = 3,
+      steps = 120,
+      restartEvery = 0,
+      settleRounds = 10,
+      settleSeedOffset = 100_000,
+    } = options
+    const rng = random(seed)
+    const replicas = Array.from({ length: replicaCount }, () => createReplica())
+
+    for (let step = 0; step < steps; step++) {
+      const actorIndex = Math.floor(rng() * replicas.length)
+      const actor = replicas[actorIndex]
+      const branch = rng()
+
+      if (branch < 0.35) {
+        const field = fields[Math.floor(rng() * fields.length)]
+        assertEqual(
+          Reflect.set(actor, field, nextValue(field, step, actorIndex)),
+          true
+        )
+      } else if (branch < 0.5) {
+        if (rng() < 0.5) actor.clear()
+        else {
+          Reflect.deleteProperty(
+            actor,
+            fields[Math.floor(rng() * fields.length)]
+          )
+        }
+      } else if (branch < 0.75) {
+        const sourceIndex = Math.floor(rng() * replicas.length)
+        if (sourceIndex !== actorIndex)
+          actor.merge(readSnapshot(replicas[sourceIndex]))
+      } else if (branch < 0.9) {
+        actor.merge(hostilePayload(step))
+      } else {
+        const frontiers = replicas.map(readAck)
+        for (const replica of replicas) replica.garbageCollect(frontiers)
+      }
+
+      if (restartEvery > 0 && (step + 1) % restartEvery === 0) {
+        const restartIndex = (seed + step) % replicas.length
+        replicas[restartIndex] = createReplica(
+          readSnapshot(replicas[restartIndex])
+        )
+      }
+    }
+
+    settleReplicaSnapshots(replicas, settleRounds, seed + settleSeedOffset)
+    return replicas
+  }
+
+  function allOtherIndices(length, sourceIndex) {
+    return Array.from({ length }, (_, index) => index).filter(
+      (index) => index !== sourceIndex
+    )
+  }
+
+  function queuePayload(queue, sourceIndex, payload, targets) {
+    const uniqueTargets = [...new Set(targets)].filter(
+      (targetIndex) => targetIndex !== sourceIndex
+    )
+    if (uniqueTargets.length === 0) return
+
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      !Array.isArray(payload) &&
+      Object.keys(payload).length === 0
+    ) {
+      return
+    }
+
+    queue.push({
+      sourceIndex,
+      targets: uniqueTargets,
+      payload:
+        payload && typeof payload === 'object'
+          ? structuredClone(payload)
+          : payload,
+    })
+  }
+
+  function captureReplicaDeltas(replica, fn) {
+    const deltas = []
+    const listener = (event) => {
+      deltas.push(event.detail)
+    }
+    replica.addEventListener('delta', listener)
+    try {
+      fn()
+    } finally {
+      replica.removeEventListener('delta', listener)
+    }
+    return deltas
+  }
+
+  function deliverOneReplicaMessage(replicas, queue, rand) {
+    const messageIndex = Math.floor(rand() * queue.length)
+    const message = queue[messageIndex]
+    const targetOffset = Math.floor(rand() * message.targets.length)
+    const targetIndex = message.targets.splice(targetOffset, 1)[0]
+    const replyDeltas = captureReplicaDeltas(replicas[targetIndex], () => {
+      replicas[targetIndex].merge(message.payload)
+    })
+
+    for (const replyDelta of replyDeltas) {
+      queuePayload(
+        queue,
+        targetIndex,
+        replyDelta,
+        allOtherIndices(replicas.length, targetIndex)
+      )
+    }
+
+    if (message.targets.length === 0) queue.splice(messageIndex, 1)
+  }
+
+  function drainReplicaQueue(replicas, queue, seed, options = {}) {
+    const rand = random(seed)
+    let deliveries = 0
+    const maxDeliveries =
+      options.maxDeliveries ??
+      Math.max(2_000, queue.length * replicas.length * 8)
+
+    while (queue.length > 0) {
+      deliverOneReplicaMessage(replicas, queue, rand)
+      deliveries++
+      if (deliveries > maxDeliveries) {
+        throw new Error(
+          `replica gossip queue exceeded ${maxDeliveries} deliveries`
+        )
+      }
+    }
+  }
+
   async function withTimeout(promise, ms, name) {
     let timer
     const timeout = new Promise((_, reject) => {
@@ -149,6 +371,7 @@ export async function runCRStructSuite(api, options = {}) {
 
   async function runTest(name, fn) {
     try {
+      if (verbose) console.log(`${label}: ${name}`)
       await withTimeout(Promise.resolve().then(fn), TEST_TIMEOUT_MS, name)
       results.tests.push({ name, ok: true })
     } catch (error) {
@@ -255,6 +478,54 @@ export async function runCRStructSuite(api, options = {}) {
     assertEqual(__read('name', rebuilt), '')
   })
 
+  await runTest(
+    'snapshot hydrate is independent of snapshot field order',
+    () => {
+      const replica = createReplica()
+      replica.name = 'alice'
+      replica.count = 7
+      replica.meta = { enabled: true }
+      replica.tags = ['a', 'b']
+
+      const shuffledSnapshot = Object.fromEntries(
+        shuffled(Object.entries(readSnapshot(replica)), 123)
+      )
+      const rebuilt = createReplica(shuffledSnapshot)
+
+      assertJsonEqual(rebuilt.clone(), replica.clone())
+    }
+  )
+
+  await runTest(
+    'merge accepts valid fields and ignores invalid siblings in one delta',
+    () => {
+      const base = createReplica()
+      const source = createReplica(readSnapshot(base))
+      source.name = 'alice'
+      source.meta = { enabled: true }
+      source.count = 7
+      const delta = readSnapshot(source)
+      delta.count.value = 'bad'
+      delta.tags = {
+        uuidv7: 'bad',
+        predecessor: 'bad',
+        value: ['bad'],
+        tombstones: [],
+      }
+
+      const target = createReplica(readSnapshot(base))
+      const events = captureEvents(target)
+      target.merge(delta)
+
+      assertEqual(target.name, 'alice')
+      assertEqual(target.count, 0)
+      assertJsonEqual(target.meta, { enabled: true })
+      assertJsonEqual(target.tags, [])
+      assertEqual(events.change.length, 1)
+      assertJsonEqual(Object.keys(events.change[0]).sort(), ['meta', 'name'])
+    }
+  )
+
   await runTest('typed errors remain explicit in core operations', () => {
     try {
       __create({
@@ -321,6 +592,58 @@ export async function runCRStructSuite(api, options = {}) {
   )
 
   await runTest(
+    'garbageCollect respects the smallest valid frontier per field',
+    () => {
+      const replica = createReplica()
+      replica.name = 'a'
+      replica.name = 'b'
+      replica.name = 'c'
+      replica.count = 1
+      replica.count = 2
+      replica.count = 3
+
+      const before = readSnapshot(replica)
+      const nameFrontiers = [...before.name.tombstones].sort()
+      const countFrontiers = [...before.count.tombstones].sort()
+
+      assert(nameFrontiers.length >= 2, 'expected multiple name tombstones')
+      assert(countFrontiers.length >= 2, 'expected multiple count tombstones')
+
+      const nameLimit = nameFrontiers[1]
+      const countLimit = countFrontiers[0]
+
+      replica.garbageCollect([
+        {
+          name: nameFrontiers.at(-1),
+          count: countFrontiers.at(-1),
+        },
+        {
+          name: nameLimit,
+          count: countLimit,
+        },
+        {
+          ghost: nameFrontiers[0],
+          name: 'bad',
+        },
+      ])
+
+      const after = readSnapshot(replica)
+      for (const uuidv7 of after.name.tombstones) {
+        assert(
+          uuidv7 === after.name.predecessor || uuidv7 > nameLimit,
+          'name gc kept a tombstone at or below the selected frontier'
+        )
+      }
+      for (const uuidv7 of after.count.tombstones) {
+        assert(
+          uuidv7 === after.count.predecessor || uuidv7 > countLimit,
+          'count gc kept a tombstone at or below the selected frontier'
+        )
+      }
+    }
+  )
+
+  await runTest(
     'acknowledge and garbageCollect compact retained tombstones',
     () => {
       const replica = createReplica()
@@ -338,6 +661,139 @@ export async function runCRStructSuite(api, options = {}) {
         after.name.tombstones.includes(after.name.predecessor),
         'expected current predecessor to survive gc'
       )
+    }
+  )
+
+  await runTest(
+    'garbage collect with complete frontier set converges after recovery',
+    () => {
+      const replicaIds = ['replica-a', 'replica-b', 'replica-c']
+      const base = createReplica()
+      base.name = 'seed-a'
+      base.name = 'seed-b'
+      base.count = 1
+      base.count = 2
+      base.meta = { enabled: true }
+      base.tags = ['seed']
+      base.tags = ['seed-2']
+
+      const replicas = Array.from({ length: replicaIds.length }, () =>
+        createReplica(readSnapshot(base))
+      )
+      const ackMaps = replicaIds.map(() => new Map())
+
+      const publishAck = (sourceIndex, targetIndexes) => {
+        const ack = readAck(replicas[sourceIndex])
+        for (const targetIndex of targetIndexes) {
+          ackMaps[targetIndex].set(replicaIds[sourceIndex], ack)
+        }
+      }
+
+      const gcReplica = (index) => {
+        replicas[index].garbageCollect([...ackMaps[index].values()])
+      }
+
+      publishAck(0, [0, 1, 2])
+      publishAck(1, [0, 1, 2])
+      publishAck(2, [0, 1, 2])
+
+      const sourceEvents = captureEvents(replicas[0])
+      replicas[0].name = 'offline-name'
+      replicas[0].count = 30
+      replicas[0].meta = { enabled: false }
+      replicas[0].tags = ['offline-a', 'offline-b', 'offline-c']
+      Reflect.deleteProperty(replicas[0], 'name')
+
+      for (const delta of sourceEvents.delta) {
+        replicas[1].merge(delta)
+        replicas[2].merge(delta)
+      }
+
+      for (let index = 0; index < replicas.length; index++) {
+        publishAck(index, [0, 1, 2])
+      }
+
+      const beforeGc = replicas.map((replica) =>
+        tombstoneCount(readSnapshot(replica))
+      )
+      for (let index = 0; index < replicas.length; index++) {
+        gcReplica(index)
+      }
+
+      const expected = replicas[0].clone()
+      for (let index = 0; index < replicas.length; index++) {
+        const afterSnapshot = readSnapshot(replicas[index])
+        assertJsonEqual(replicas[index].clone(), expected)
+        assert(
+          tombstoneCount(afterSnapshot) <= beforeGc[index],
+          `gc failed to compact replica ${index}`
+        )
+        assertJsonEqual(
+          createReplica(afterSnapshot).clone(),
+          replicas[index].clone(),
+          `snapshot hydrate diverged after gc for replica ${index}`
+        )
+      }
+    }
+  )
+
+  await runTest(
+    'partial-frontier garbage collection is caller misuse and does not guarantee convergence',
+    () => {
+      const replicaIds = ['replica-a', 'replica-b', 'replica-c']
+      const base = createReplica()
+      base.name = 'seed-a'
+      base.name = 'seed-b'
+      base.count = 1
+      base.meta = { enabled: true }
+      base.tags = ['seed']
+
+      const replicas = Array.from({ length: replicaIds.length }, () =>
+        createReplica(readSnapshot(base))
+      )
+      const ackMaps = replicaIds.map(() => new Map())
+
+      const publishAck = (sourceIndex, targetIndexes) => {
+        const ack = readAck(replicas[sourceIndex])
+        for (const targetIndex of targetIndexes) {
+          ackMaps[targetIndex].set(replicaIds[sourceIndex], ack)
+        }
+      }
+
+      const gcReplica = (index) => {
+        replicas[index].garbageCollect([...ackMaps[index].values()])
+      }
+
+      publishAck(0, [0, 1, 2])
+      publishAck(1, [0, 1, 2])
+      publishAck(2, [0, 1, 2])
+      const stalePeerFrontier = ackMaps[0].get(replicaIds[2])
+
+      const sourceEvents = captureEvents(replicas[0])
+      replicas[0].name = 'offline-name'
+      replicas[0].count = 31
+      replicas[0].tags = ['offline-only']
+
+      for (const delta of sourceEvents.delta) {
+        replicas[1].merge(delta)
+      }
+
+      publishAck(0, [0, 1])
+      publishAck(1, [0, 1])
+      assertJsonEqual(
+        ackMaps[0].get(replicaIds[2]),
+        stalePeerFrontier,
+        'replica 2 frontier unexpectedly advanced'
+      )
+
+      gcReplica(0)
+      gcReplica(1)
+
+      for (const delta of sourceEvents.delta) {
+        assertEqual(replicas[2].merge(delta), undefined)
+      }
+
+      assertJsonEqual(replicas[0].clone(), replicas[1].clone())
     }
   )
 
@@ -372,7 +828,7 @@ export async function runCRStructSuite(api, options = {}) {
       () => {
         const rng = random(0x0ddc0ffe)
         const replicas = Array.from({ length: 4 }, () => createReplica())
-        const fields = ['name', 'count', 'meta', 'tags']
+        const queue = []
 
         for (let step = 0; step < stressRounds * 20; step++) {
           const actorIndex = Math.floor(rng() * replicas.length)
@@ -381,51 +837,64 @@ export async function runCRStructSuite(api, options = {}) {
 
           if (branch < 0.34) {
             const field = fields[Math.floor(rng() * fields.length)]
-            assertEqual(
-              Reflect.set(actor, field, nextValue(field, step, actorIndex)),
-              true
-            )
+            const deltas = captureReplicaDeltas(actor, () => {
+              assertEqual(
+                Reflect.set(actor, field, nextValue(field, step, actorIndex)),
+                true
+              )
+            })
+            for (const delta of deltas) {
+              queuePayload(
+                queue,
+                actorIndex,
+                delta,
+                allOtherIndices(replicas.length, actorIndex)
+              )
+            }
             continue
           }
 
           if (branch < 0.5) {
-            if (rng() < 0.5) actor.clear()
-            else
-              Reflect.deleteProperty(
-                actor,
-                fields[Math.floor(rng() * fields.length)]
+            const deltas = captureReplicaDeltas(actor, () => {
+              if (rng() < 0.5) actor.clear()
+              else {
+                Reflect.deleteProperty(
+                  actor,
+                  fields[Math.floor(rng() * fields.length)]
+                )
+              }
+            })
+            for (const delta of deltas) {
+              queuePayload(
+                queue,
+                actorIndex,
+                delta,
+                allOtherIndices(replicas.length, actorIndex)
               )
+            }
             continue
           }
 
           if (branch < 0.8) {
-            const sourceIndex = Math.floor(rng() * replicas.length)
-            if (sourceIndex === actorIndex) continue
-            actor.merge(readSnapshot(replicas[sourceIndex]))
+            if (queue.length === 0) continue
+            const deliveries = 1 + Math.floor(rng() * Math.min(4, queue.length))
+            for (
+              let index = 0;
+              index < deliveries && queue.length > 0;
+              index++
+            ) {
+              deliverOneReplicaMessage(replicas, queue, rng)
+            }
             continue
           }
 
+          if (queue.length > 0)
+            drainReplicaQueue(replicas, queue, 90_000 + step)
           const frontiers = replicas.map(readAck)
           for (const replica of replicas) replica.garbageCollect(frontiers)
         }
 
-        for (let round = 0; round < 4; round++) {
-          const snapshots = replicas.map(readSnapshot)
-          for (
-            let targetIndex = 0;
-            targetIndex < replicas.length;
-            targetIndex++
-          ) {
-            for (
-              let sourceIndex = 0;
-              sourceIndex < snapshots.length;
-              sourceIndex++
-            ) {
-              if (sourceIndex === targetIndex) continue
-              replicas[targetIndex].merge(snapshots[sourceIndex])
-            }
-          }
-        }
+        drainReplicaQueue(replicas, queue, 190_000)
 
         const expected = projection(replicas[0])
         for (let index = 1; index < replicas.length; index++) {
@@ -433,6 +902,71 @@ export async function runCRStructSuite(api, options = {}) {
         }
       }
     )
+
+    await runTest(
+      'replicas converge after shuffled async delta delivery',
+      () => {
+        const replicas = runRandomReplicaScenario(0xc0ffee, {
+          replicaCount: 5,
+          steps: stressRounds * 40,
+          settleRounds: 12,
+          settleSeedOffset: 20_000,
+        })
+
+        const expected = projection(replicas[0])
+        for (let index = 1; index < replicas.length; index++) {
+          assertJsonEqual(projection(replicas[index]), expected)
+        }
+      }
+    )
+
+    await runTest(
+      'replicas converge across shuffled delivery with restarts',
+      () => {
+        const replicas = runRandomReplicaScenario(0x5eed5eed, {
+          replicaCount: 5,
+          steps: stressRounds * 45,
+          restartEvery: 9,
+          settleRounds: 16,
+          settleSeedOffset: 30_000,
+        })
+
+        const expected = projection(replicas[0])
+        for (let index = 1; index < replicas.length; index++) {
+          assertJsonEqual(projection(replicas[index]), expected)
+        }
+      }
+    )
+
+    await runTest('100 aggressive deterministic convergence scenarios', () => {
+      for (let scenario = 0; scenario < 100; scenario++) {
+        const replicas = runRandomReplicaScenario(50_000 + scenario, {
+          replicaCount: 3 + (scenario % 3),
+          steps: 30 + (scenario % 5) * 10,
+          restartEvery: scenario % 2 === 0 ? 0 : 7 + (scenario % 4),
+          settleRounds: 10,
+          settleSeedOffset: 40_000,
+        })
+
+        const expected = projection(replicas[0])
+        for (let index = 1; index < replicas.length; index++) {
+          assertJsonEqual(
+            projection(replicas[index]),
+            expected,
+            `scenario ${scenario} diverged`
+          )
+        }
+
+        for (let index = 0; index < replicas.length; index++) {
+          const hydrated = createReplica(readSnapshot(replicas[index]))
+          assertJsonEqual(
+            hydrated.clone(),
+            replicas[index].clone(),
+            `scenario ${scenario} hydrate mismatch on replica ${index}`
+          )
+        }
+      }
+    })
   }
 
   return results

@@ -101,30 +101,29 @@
           'no-unused-dfns': true,
         },
         localBiblio: {
-          CRDTOVERVIEW: {
-            title: 'Conflict-free Replicated Data Types: An Overview',
-            href: 'https://asc.di.fct.unl.pt/~nmp/pubs/tr-arxiv-crdt-2018.pdf',
-            publisher: 'arXiv',
-            date: '2018-06',
-          },
-          RIAKDTMAP: {
-            title:
-              'Riak DT Map: A Composable, Convergent Replicated Dictionary',
-            href: 'https://doi.org/10.1145/2596631.2596633',
-            publisher: 'ACM',
-            date: '2014',
-          },
-          DELTACRDTS: {
-            title: 'Delta State Replicated Data Types',
-            href: 'https://doi.org/10.1016/j.jpdc.2017.08.003',
-            publisher: 'Journal of Parallel and Distributed Computing',
-            date: '2018',
+          MARTIN_KLEPPMANN: {
+            title: 'CRDTs: The Hard Parts',
+            href: 'https://martin.kleppmann.com/2020/07/06/crdt-hard-parts-hydra.html',
+            publisher: 'Martin Kleppmann',
+            date: '2020-06',
           },
           RFC9562: {
             title: 'Universally Unique IDentifiers (UUIDs)',
             href: 'https://www.rfc-editor.org/rfc/rfc9562',
             publisher: 'IETF',
             date: '2024-05',
+          },
+          INFRA: {
+            title: 'Infra',
+            href: 'https://infra.spec.whatwg.org/',
+            publisher: 'WhatWG',
+            date: '2026-03',
+          },
+          HTML: {
+            title: '2.7 Safe passing of structured data',
+            href: 'https://html.spec.whatwg.org/multipage/structured-data.html',
+            publisher: 'WhatWG',
+            date: '2026-04',
           },
         },
       }
@@ -297,76 +296,54 @@
   <body>
     <section id="abstract">
       <p>
-        This document specifies convergent replicated struct(CR-Struct), a
-        state-based CRDT for fixed-key object structs. Each field maintains one
-        visible value together with authoritative knowledge of overwritten
-        UUIDv7 identifiers. The specification defines the data model, merge
-        rules, snapshot and delta formats, acknowledgement frontiers,
-        overwrite-set compaction, and one conforming JavaScript binding.
+        This document defines Convergent Replicated Struct (CR-Struct), a delta
+        CRDT for an fixed-key object struct. Each key resolves to a single
+        convergent value. Every update is assigned a UUIDv7, and deletions are
+        tracked as a list of UUIDv7 identifiers. The specification defines the
+        data structure, merge rules, snapshot and delta formats,
+        garbage-collection rules, acknowledgement formats, and one conforming
+        JavaScript binding.
       </p>
     </section>
 
     <section id="sotd">
       <p>
-        This is an unofficial specification maintained alongside a reference
-        implementation.
+        CR-Struct is designed to serve as a core for use-case-optimized CRDT
+        interfaces, like Person, Organization, Event objects.
       </p>
+      <p>
+        This specification is maintained alongside a reference implementation.
+      </p>
+
+      <p>To use the reference implementation see:</p>
+      <ul>
+        <li>
+          <a
+            href="https://www.npmjs.com/package/@sovereignbase/convergent-replicated-struct"
+            >NPM Registry
+          </a>
+        </li>
+        <li>
+          <a href="https://jsr.io/@sovereignbase/convergent-replicated-struct"
+            >JSR Registry
+          </a>
+        </li>
+      </ul>
+
+      <p>Inspired by [[MARTIN_KLEPPMANN]].</p>
     </section>
 
     <section id="conformance">
       <p>
-        The key words <em>MUST</em>, <em>MUST NOT</em>, <em>SHOULD</em>,
-        <em>SHOULD NOT</em>, and <em>MAY</em> in this document are to be
-        interpreted as described in BCP 14 [[RFC2119]] [[RFC8174]] when, and
-        only when, they appear in all capitals.
-      </p>
-      <p>
-        Unless otherwise stated, neutral data-structure and algorithm terms such
-        as <em>struct</em>, <em>map</em>, <em>list</em>, <em>set</em>,
-        <em>contains</em>, and <em>remove</em> are used with the meanings
+        Unless otherwise stated, data-structure and algorithm terms such as
+        <em>list</em>, <em>map</em>, <em>struct</em>, <em>parameters</em>,
+        <em>variables</em>, and <em>iterate</em> are used with the meanings
         defined by Infra [[INFRA]].
       </p>
       <p>
         A conforming implementation MUST preserve the replica convergence and
-        overwrite semantics defined by the algorithms in this specification.
+        deletion semantics defined by the algorithms in this specification.
       </p>
-    </section>
-
-    <section class="informative">
-      <h2>Introduction</h2>
-      <p>
-        CR-Struct is designed for static object shapes where keys are known up
-        front and each key keeps one visible value of a stable runtime kind.
-      </p>
-      <p>
-        CR-Struct is informed by map CRDTs with observed-remove semantics
-        [[RIAKDTMAP]] [[DELTACRDTS]] and by LWW-register-style one-visible-
-        winner conflict resolution [[CRDTOVERVIEW]], but it is not an OR-Map or
-        a plain last-writer-wins register. Its field set is fixed by the default
-        struct, and its distinguishing replicated state is the per-field
-        overwrite set that records which UUIDv7 identifiers have already been
-        superseded.
-      </p>
-      <p>
-        Taken together, the fixed field set, one-visible-value policy, per-field
-        overwrite tracking, and UUIDv7 identifiers yield the following
-        operational properties in the reference binding:
-      </p>
-      <ul>
-        <li>
-          each field update can mint a fresh UUIDv7 without central
-          coordination;
-        </li>
-        <li>each field keeps only one visible value at a time;</li>
-        <li>
-          the overwrite set allows stale candidates to be rejected and rebuttal
-          deltas to be emitted during merge;
-        </li>
-        <li>
-          UUIDv7 ordering is useful as a deterministic fallback when overwrite
-          knowledge alone does not decide the winner [[RFC9562]].
-        </li>
-      </ul>
     </section>
 
     <section>
@@ -453,35 +430,44 @@
       </p>
     </section>
 
-    <section>
-      <h2>UUIDv7 Identifier Requirements</h2>
+        <section>
+      <h2>Data Structure</h2>
       <p>
-        A conforming CR-Struct implementation MUST assign one valid
-        <a>UUIDv7 identifier</a> to each current <a>field state entry</a>.
+        The same logical replica can be viewed through three useful
+        representations: the serializable snapshot used for transport and
+        storage, one possible runtime projection used internally by a binding,
+        and the final consumer-facing visible sequence.
       </p>
-      <p>
-        The reference binding generates fresh UUIDv7 identifiers for local
-        overwrites and compares canonical textual UUIDv7 representations
-        lexicographically when it needs an order for merge resolution.
-      </p>
-      <p>
-        Ordering does not override overwrite knowledge. If an identifier is in a
-        field's overwrite set, it is an
-        <a>overwritten identifier</a> regardless of any later lexical
-        comparison.
-      </p>
-      <aside class="note">
-        <p>
-          UUIDv7 combines a Unix-epoch millisecond time component with
-          additional bits reserved for monotonicity and pseudorandom uniqueness
-          [[RFC9562]]. This makes it a useful fit for per-field identifiers that
-          benefit from both local ordering and low collision probability.
-        </p>
-      </aside>
+      <section>
+        <h3>Snapshot</h3>
+        <pre
+          class="json"
+          data-include="./examples/snapshot.json"
+          data-include-format="text"
+        ></pre>
+      </section>
+
+      <section>
+        <h3>Runtime</h3>
+        <pre
+          class="js"
+          data-include="./examples/runtime.js"
+          data-include-format="text"
+        ></pre>
+      </section>
+
+      <section>
+        <h3>Consumer</h3>
+        <pre
+          class="json"
+          data-include="./examples/consumer.json"
+          data-include-format="text"
+        ></pre>
+      </section>
     </section>
 
     <section>
-      <h2>Methods</h2>
+      <h2>Algorithms</h2>
 
       <section>
         <h3>CRUD</h3>
@@ -633,70 +619,19 @@
       </section>
 
       <section>
-        <h3>Additional</h3>
+        <h2>Reference JavaScript Binding</h2>
+        <p>
+          This section defines one conforming JavaScript binding for the model
+          above.
+        </p>
 
         <section>
-          <h4>keys(), values(), entries()</h4>
-          <p>
-            These operations expose resolved live state without mutating replica
-            history.
-          </p>
-          <p>
-            In the reference binding, <code>keys()</code> returns the known
-            field keys, <code>values()</code> returns detached clones of the
-            current visible values, and <code>entries()</code> returns key-value
-            pairs whose values are likewise detached clones.
-          </p>
-        </section>
-      </section>
-    </section>
-
-    <section>
-      <h2>Overwrite-Set Compaction</h2>
-      <p>
-        The reference binding exposes compaction explicitly through
-        <code>acknowledge()</code> and <code>garbageCollect()</code>.
-      </p>
-      <p>
-        Acknowledgement and garbage collection operate only on identifiers that
-        are already known to be overwritten. They do not remove the current
-        winning UUIDv7 for a field, and they do not remove the current
-        predecessor identifier named by <code>after</code>.
-      </p>
-      <p>
-        Consequently, compaction can shrink overwrite history without changing
-        the resolved visible live state of the replica.
-      </p>
-    </section>
-
-    <section class="informative">
-      <h2>Payload Guidance</h2>
-      <p>
-        CR-Struct is best suited to static object shapes whose fields hold
-        stable runtime kinds. It is not, by itself, a field-level CRDT for
-        recursively mutating nested object graphs.
-      </p>
-      <p>
-        The reference binding performs a shallow runtime-kind validation against
-        the corresponding default value. It does not define deep schema
-        validation for nested payload structure.
-      </p>
-    </section>
-
-    <section>
-      <h2>Reference JavaScript Binding</h2>
-      <p>
-        This section defines one conforming JavaScript binding for the model
-        above.
-      </p>
-
-      <section>
-        <h3>API Summary</h3>
-        <pre class="idl">
+          <h3>API Summary</h3>
+          <pre class="idl">
 [Exposed=*]
-interface OOStruct {
+interface CRStruct {
   constructor(object defaults, optional object snapshot);
-  static OOStruct create(object defaults, optional object snapshot);
+  static CRStruct create(object defaults, optional object snapshot);
   any read(DOMString key);
   undefined update(DOMString key, any value);
   undefined delete(optional DOMString key);
@@ -711,182 +646,183 @@ interface OOStruct {
   undefined removeEventListener(DOMString type, any listener, optional any options);
 };
 
-dictionary OOStructSnapshotEntry {
+dictionary CRStructSnapshotEntry {
   required DOMString uuidv7;
   required DOMString after;
   required any value;
   required FrozenArray&lt;DOMString&gt; overwrites;
 };
-        </pre>
-        <p>
-          Snapshot and delta payloads are plain JavaScript objects keyed by
-          known fields. Change payloads are plain JavaScript objects keyed by
-          changed fields, and acknowledgement payloads are plain JavaScript
-          objects keyed by acknowledged fields.
-        </p>
-        <p>
-          The actual field-entry payload member names are
-          <code>__uuidv7</code>, <code>__after</code>, <code>__value</code>, and
-          <code>__overwrites</code>. The Web IDL above uses IDL-safe member
-          names because dictionary members cannot use the double-underscore
-          form.
-        </p>
-        <p>
-          The Web IDL above is a coarse binding summary. The precise key- and
-          value-level behavior is defined by the prose and algorithms below.
-        </p>
-      </section>
-
-      <section>
-        <h3>Errors</h3>
-        <p>
-          The JavaScript binding throws <code>OOStructError</code> with a string
-          <code>code</code> attribute for local API misuse.
-        </p>
-        <dl>
-          <dt><code>DEFAULTS_NOT_CLONEABLE</code></dt>
-          <dd>
-            Thrown when constructor defaults are not supported by
-            <code>structuredClone</code>.
-          </dd>
-          <dt><code>VALUE_NOT_CLONEABLE</code></dt>
-          <dd>
-            Thrown when <a data-link-for="OOStruct">update()</a> receives a
-            value that is not supported by <code>structuredClone</code>.
-          </dd>
-          <dt><code>VALUE_TYPE_MISMATCH</code></dt>
-          <dd>
-            Thrown when <a data-link-for="OOStruct">update()</a> receives a
-            value whose runtime prototype category does not match the
-            corresponding default field value.
-          </dd>
-        </dl>
-      </section>
-
-      <section>
-        <h3>Events</h3>
-        <p>
-          The JavaScript binding maintains an internal
-          <code>EventTarget</code> object as defined by DOM [[DOM]].
-        </p>
-        <p>
-          This binding is not specified as inheriting from
-          <code>EventTarget</code>. Instead, its listener methods forward to
-          that internal event target, and its local mutations and merges
-          dispatch synthetic events through it.
-        </p>
-        <p>
-          The JavaScript binding defines four synthetic event types. Each is a
-          <code>CustomEvent</code> object whose <code>detail</code> attribute is
-          initialized as described below [[DOM]].
-        </p>
-        <dl>
-          <dt><dfn>delta event</dfn></dt>
-          <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> is a per-field
-            <a>delta</a>. The binding dispatches this event for local overwrites
-            and for merge-time repair or rebuttal state that should be
-            upstreamed.
-          </dd>
-          <dt><dfn>change event</dfn></dt>
-          <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> maps changed
-            keys to their new visible values.
-          </dd>
-          <dt><dfn>ack event</dfn></dt>
-          <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> maps known keys
-            to their current acknowledgement frontier values produced when
-            <a data-link-for="OOStruct">acknowledge()</a>
-            is invoked.
-          </dd>
-          <dt><dfn>snapshot event</dfn></dt>
-          <dd>
-            A <code>CustomEvent</code> whose <code>detail</code> is the full
-            current snapshot produced when
-            <a data-link-for="OOStruct">snapshot()</a>
-            is invoked.
-          </dd>
-        </dl>
-        <p>
-          <a data-link-for="OOStruct">update()</a> and
-          <a data-link-for="OOStruct">delete()</a> MUST dispatch
-          <a>delta event</a> before <a>change event</a>. A merge MUST dispatch
-          <a>delta event</a> only when it produces egress delta material and
-          MUST dispatch <a>change event</a> only when visible field values
-          change. <a data-link-for="OOStruct">acknowledge()</a> MUST dispatch
-          <a>ack event</a>, and <a data-link-for="OOStruct">snapshot()</a> MUST
-          dispatch <a>snapshot event</a>.
-        </p>
-      </section>
-
-      <section>
-        <h3>Auxiliary Algorithms</h3>
-
-        <section>
-          <h4><dfn>parse a snapshot entry</dfn></h4>
-          <ol class="algorithm">
-            <li>
-              If the candidate value is not a record, then return failure.
-            </li>
-            <li>
-              If the candidate value does not have its own <code>__value</code>
-              member, then return failure.
-            </li>
-            <li>
-              If the candidate value's <code>__uuidv7</code> member is not a
-              valid <a>UUIDv7 identifier</a>, then return failure.
-            </li>
-            <li>
-              If the candidate value's <code>__after</code> member is not a
-              valid <a>UUIDv7 identifier</a>, then return failure.
-            </li>
-            <li>
-              If the candidate value's <code>__overwrites</code> member is not a
-              list, then return failure.
-            </li>
-            <li>
-              If the candidate value's <code>__value</code> member cannot be
-              copied with <code>structuredClone</code>, then return failure.
-            </li>
-            <li>
-              If the cloned candidate value does not have the same runtime
-              prototype category as the corresponding default value, then return
-              failure.
-            </li>
-            <li>Let <var>overwrites</var> be a new empty set.</li>
-            <li>
-              For each listed overwrite, ignore non-UUIDv7 values and the
-              candidate's own <code>__uuidv7</code>; add the rest to
-              <var>overwrites</var>.
-            </li>
-            <li>
-              If <var>overwrites</var> does not contain <code>__after</code>,
-              then return failure.
-            </li>
-            <li>Return the normalized field entry.</li>
-          </ol>
-        </section>
-
-        <section>
-          <h4><dfn>serialize a state entry</dfn></h4>
+        </pre
+          >
           <p>
-            Return a new snapshot entry whose scalar members equal the field
-            entry, whose <code>__value</code> member is a detached structured
-            clone of the current field value, and whose
-            <code>__overwrites</code> is a list created from the overwrite set
-            in iteration order.
+            Snapshot and delta payloads are plain JavaScript objects keyed by
+            known fields. Change payloads are plain JavaScript objects keyed by
+            changed fields, and acknowledgement payloads are plain JavaScript
+            objects keyed by acknowledged fields.
+          </p>
+          <p>
+            The actual field-entry payload member names are
+            <code>__uuidv7</code>, <code>__after</code>, <code>__value</code>,
+            and <code>__overwrites</code>. The Web IDL above uses IDL-safe
+            member names because dictionary members cannot use the
+            double-underscore form.
+          </p>
+          <p>
+            The Web IDL above is a coarse binding summary. The precise key- and
+            value-level behavior is defined by the prose and algorithms below.
           </p>
         </section>
-      </section>
-
-      <section>
-        <h3>Algorithms</h3>
 
         <section>
-          <h4>CRUD</h4>
+          <h3>Errors</h3>
+          <p>
+            The JavaScript binding throws <code>CRStructError</code> with a
+            string <code>code</code> attribute for local API misuse.
+          </p>
+          <dl>
+            <dt><code>DEFAULTS_NOT_CLONEABLE</code></dt>
+            <dd>
+              Thrown when constructor defaults are not supported by
+              <code>structuredClone</code>.
+            </dd>
+            <dt><code>VALUE_NOT_CLONEABLE</code></dt>
+            <dd>
+              Thrown when <a data-link-for="CRStruct">update()</a> receives a
+              value that is not supported by <code>structuredClone</code>.
+            </dd>
+            <dt><code>VALUE_TYPE_MISMATCH</code></dt>
+            <dd>
+              Thrown when <a data-link-for="CRStruct">update()</a> receives a
+              value whose runtime prototype category does not match the
+              corresponding default field value.
+            </dd>
+          </dl>
+        </section>
 
-          <section data-dfn-for="OOStruct">
+        <section>
+          <h3>Events</h3>
+          <p>
+            The JavaScript binding maintains an internal
+            <code>EventTarget</code> object as defined by DOM [[DOM]].
+          </p>
+          <p>
+            This binding is not specified as inheriting from
+            <code>EventTarget</code>. Instead, its listener methods forward to
+            that internal event target, and its local mutations and merges
+            dispatch synthetic events through it.
+          </p>
+          <p>
+            The JavaScript binding defines four synthetic event types. Each is a
+            <code>CustomEvent</code> object whose <code>detail</code> attribute
+            is initialized as described below [[DOM]].
+          </p>
+          <dl>
+            <dt><dfn>delta event</dfn></dt>
+            <dd>
+              A <code>CustomEvent</code> whose <code>detail</code> is a
+              per-field <a>delta</a>. The binding dispatches this event for
+              local overwrites and for merge-time repair or rebuttal state that
+              should be upstreamed.
+            </dd>
+            <dt><dfn>change event</dfn></dt>
+            <dd>
+              A <code>CustomEvent</code> whose <code>detail</code> maps changed
+              keys to their new visible values.
+            </dd>
+            <dt><dfn>ack event</dfn></dt>
+            <dd>
+              A <code>CustomEvent</code> whose <code>detail</code> maps known
+              keys to their current acknowledgement frontier values produced
+              when
+              <a data-link-for="CRStruct">acknowledge()</a>
+              is invoked.
+            </dd>
+            <dt><dfn>snapshot event</dfn></dt>
+            <dd>
+              A <code>CustomEvent</code> whose <code>detail</code> is the full
+              current snapshot produced when
+              <a data-link-for="CRStruct">snapshot()</a>
+              is invoked.
+            </dd>
+          </dl>
+          <p>
+            <a data-link-for="CRStruct">update()</a> and
+            <a data-link-for="CRStruct">delete()</a> MUST dispatch
+            <a>delta event</a> before <a>change event</a>. A merge MUST dispatch
+            <a>delta event</a> only when it produces egress delta material and
+            MUST dispatch <a>change event</a> only when visible field values
+            change. <a data-link-for="CRStruct">acknowledge()</a> MUST dispatch
+            <a>ack event</a>, and
+            <a data-link-for="CRStruct">snapshot()</a> MUST dispatch
+            <a>snapshot event</a>.
+          </p>
+        </section>
+
+        <section>
+          <h3>Auxiliary Algorithms</h3>
+
+          <section>
+            <h4><dfn>parse a snapshot entry</dfn></h4>
+            <ol class="algorithm">
+              <li>
+                If the candidate value is not a record, then return failure.
+              </li>
+              <li>
+                If the candidate value does not have its own
+                <code>__value</code>
+                member, then return failure.
+              </li>
+              <li>
+                If the candidate value's <code>__uuidv7</code> member is not a
+                valid <a>UUIDv7 identifier</a>, then return failure.
+              </li>
+              <li>
+                If the candidate value's <code>__after</code> member is not a
+                valid <a>UUIDv7 identifier</a>, then return failure.
+              </li>
+              <li>
+                If the candidate value's <code>__overwrites</code> member is not
+                a list, then return failure.
+              </li>
+              <li>
+                If the candidate value's <code>__value</code> member cannot be
+                copied with <code>structuredClone</code>, then return failure.
+              </li>
+              <li>
+                If the cloned candidate value does not have the same runtime
+                prototype category as the corresponding default value, then
+                return failure.
+              </li>
+              <li>Let <var>overwrites</var> be a new empty set.</li>
+              <li>
+                For each listed overwrite, ignore non-UUIDv7 values and the
+                candidate's own <code>__uuidv7</code>; add the rest to
+                <var>overwrites</var>.
+              </li>
+              <li>
+                If <var>overwrites</var> does not contain <code>__after</code>,
+                then return failure.
+              </li>
+              <li>Return the normalized field entry.</li>
+            </ol>
+          </section>
+
+          <section>
+            <h4><dfn>serialize a state entry</dfn></h4>
+            <p>
+              Return a new snapshot entry whose scalar members equal the field
+              entry, whose <code>__value</code> member is a detached structured
+              clone of the current field value, and whose
+              <code>__overwrites</code> is a list created from the overwrite set
+              in iteration order.
+            </p>
+          </section>
+        </section>
+
+        <section>
+          <h3>Methods</h3>
+
+          <section>
             <h5><dfn class="lint-ignore">Constructor</dfn></h5>
             <ol class="algorithm">
               <li>
@@ -894,7 +830,7 @@ dictionary OOStructSnapshotEntry {
                 <code>structuredClone</code>.
               </li>
               <li>
-                If copying fails, throw <code>OOStructError</code> with code
+                If copying fails, throw <code>CRStructError</code> with code
                 <code>DEFAULTS_NOT_CLONEABLE</code>.
               </li>
               <li>Store the cloned defaults as the <a>default struct</a>.</li>
@@ -913,24 +849,18 @@ dictionary OOStructSnapshotEntry {
                 containing only that synthetic root.
               </li>
             </ol>
-          </section>
 
-          <section data-dfn-for="OOStruct">
             <h5><dfn class="lint-ignore">create()</dfn></h5>
             <p>
-              Return a new <code>OOStruct</code> constructed from the arguments.
+              Return a new <code>CRStruct</code> constructed from the arguments.
             </p>
-          </section>
 
-          <section data-dfn-for="OOStruct">
             <h5><dfn class="lint-ignore">read()</dfn></h5>
             <p>
               Return a detached structured clone of the current visible value
               for key.
             </p>
-          </section>
 
-          <section data-dfn-for="OOStruct">
             <h5><dfn>update()</dfn></h5>
             <ol class="algorithm">
               <li>
@@ -938,13 +868,13 @@ dictionary OOStructSnapshotEntry {
                 <code>structuredClone</code>.
               </li>
               <li>
-                If copying fails, throw <code>OOStructError</code> with code
+                If copying fails, throw <code>CRStructError</code> with code
                 <code>VALUE_NOT_CLONEABLE</code>.
               </li>
               <li>
                 If the copied value does not have the same runtime prototype
                 category as the corresponding default value, throw
-                <code>OOStructError</code> with code
+                <code>CRStructError</code> with code
                 <code>VALUE_TYPE_MISMATCH</code>.
               </li>
               <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
@@ -972,7 +902,7 @@ dictionary OOStructSnapshotEntry {
             </ol>
           </section>
 
-          <section data-dfn-for="OOStruct">
+
             <h5><dfn>delete()</dfn></h5>
             <ol class="algorithm">
               <li>Let <var>delta</var> be a new empty <a>delta</a>.</li>
@@ -1000,12 +930,8 @@ dictionary OOStructSnapshotEntry {
               </li>
             </ol>
           </section>
-        </section>
 
-        <section>
-          <h4>MAGS</h4>
-
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">merge()</dfn></h5>
             <ol class="algorithm">
               <li>If replica is null, not an object, or a list, return.</li>
@@ -1089,7 +1015,7 @@ dictionary OOStructSnapshotEntry {
             </ol>
           </section>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">acknowledge()</dfn></h5>
             <ol class="algorithm">
               <li>Let <var>ack</var> be a new empty acknowledgement object.</li>
@@ -1106,7 +1032,7 @@ dictionary OOStructSnapshotEntry {
             </ol>
           </section>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">garbageCollect()</dfn></h5>
             <ol class="algorithm">
               <li>
@@ -1146,7 +1072,7 @@ dictionary OOStructSnapshotEntry {
             </ol>
           </section>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">snapshot()</dfn></h5>
             <p>
               Run <a>serialize a state entry</a> on every current field entry,
@@ -1156,15 +1082,14 @@ dictionary OOStructSnapshotEntry {
           </section>
         </section>
 
-        <section>
-          <h4>Additional</h4>
+    
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">keys()</dfn></h5>
             <p>Return the known field keys from live state.</p>
           </section>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">values()</dfn></h5>
             <p>
               Return detached structured clones of the current visible field
@@ -1172,19 +1097,16 @@ dictionary OOStructSnapshotEntry {
             </p>
           </section>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5><dfn class="lint-ignore">entries()</dfn></h5>
             <p>
               Return key-value pairs where each value is a detached structured
               clone of the current visible field value.
             </p>
           </section>
-        </section>
 
-        <section>
-          <h4>EventTarget</h4>
 
-          <section data-dfn-for="OOStruct">
+          <section data-dfn-for="CRStruct">
             <h5>
               <dfn class="lint-ignore">addEventListener()</dfn> and
               <dfn class="lint-ignore">removeEventListener()</dfn>
@@ -1197,16 +1119,6 @@ dictionary OOStructSnapshotEntry {
           </section>
         </section>
       </section>
-    </section>
-
-    <section class="informative">
-      <h2>Acknowledgements</h2>
-      <p>
-        This specification builds on UUIDv7 [[RFC9562]], map CRDTs with
-        observed-remove semantics [[RIAKDTMAP]] [[DELTACRDTS]], and LWW-register
-        literature [[CRDTOVERVIEW]], while defining a new fixed-key
-        overwrite-tracked struct CRDT.
-      </p>
     </section>
   </body>
 </html>
