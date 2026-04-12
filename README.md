@@ -42,34 +42,51 @@ vlt install jsr:@sovereignbase/convergent-replicated-struct
 ### Copy-paste example
 
 ```ts
-import { CRStruct } from '@sovereignbase/convergent-replicated-struct'
+import {
+  CRStruct,
+  type CRStructSnapshot,
+} from '@sovereignbase/convergent-replicated-struct'
+
+type MetaStruct = {
+  done: boolean
+}
 
 type TodoStruct = {
   title: string
   count: number
-  meta: { done: boolean }
+  meta: CRStructSnapshot<MetaStruct>
   tags: string[]
 }
 
-const alice = CRStruct.create<TodoStruct>({
+const aliceMeta = new CRStruct<MetaStruct>({done: false})
+
+const alice = new CRStruct<TodoStruct>({
   title: '',
   count: 0,
-  meta: { done: false },
-  tags: [],
-})
-const bob = CRStruct.create<TodoStruct>({
-  title: '',
-  count: 0,
-  meta: { done: false },
+  meta: aliceMeta.toJSON()
   tags: [],
 })
 
-alice.addEventListener('delta', (event) => bob.merge(event.detail))
-alice.update('title', 'hello world')
-alice.update('meta', { done: true })
+const bobMeta = new CRStruct<MetaStruct>({done: false})
 
-console.log(bob.read('title')) // "hello world"
-console.log(bob.read('meta')) // { done: true }
+const bob = new CRStruct<TodoStruct>({
+  title: '',
+  count: 0,
+  meta: bobMeta.toJSON()
+  tags: [],
+})
+
+alice.addEventListener('delta', (event) => {
+  bob.merge(event.detail)
+})
+
+aliceMeta.done = true
+
+alice.title = 'hello world'
+alice.meta = aliceMeta.toJSON()
+
+console.log(bob.title) // 'hello world'
+console.log(bobMeta.done) // true
 ```
 
 ### Hydrating from a snapshot
@@ -91,23 +108,16 @@ const source = new CRStruct<DraftStruct>({
 })
 let snapshot!: CRStructSnapshot<DraftStruct>
 
-source.addEventListener(
-  'snapshot',
-  (event) => {
-    snapshot = event.detail
-  },
-  { once: true }
-)
+source.addEventListener('snapshot', (event) => {
+  localStorage.setItem('snapshot', JSON.stringify(event.detail))
+})
 
-source.update('title', 'draft')
+source.title = 'draft'
 source.snapshot()
 
-const restored = CRStruct.create<DraftStruct>(
-  {
-    title: '',
-    count: 0,
-  },
-  snapshot
+const restored = new CRStruct<DraftStruct>(
+  { title: '', count: 0 },
+  JSON.parse(localStorage.getItem('snapshot'))
 )
 
 console.log(restored.entries()) // [['title', 'draft'], ['count', 0]]
@@ -138,7 +148,37 @@ replica.addEventListener('ack', (event) => {
 replica.addEventListener('snapshot', (event) => {
   console.log('snapshot', event.detail)
 })
+
+replica.name = 'alice'
+delete replica.name
+replica.snapshot()
+replica.acknowledge()
 ```
+
+### Iteration and JSON serialization
+
+```ts
+import { CRStruct } from '@sovereignbase/convergent-replicated-struct'
+
+const struct = new CRStruct({
+  givenName: '',
+  familyName: '',
+})
+
+struct.givenName = 'Jori'
+struct.familyName = 'Lehtinen'
+
+for (const key in struct) console.log(key)
+for (const [key, val] of struct) console.log(key, val)
+console.log(struct.keys())
+console.log(struct.values())
+console.log(struct.entries())
+console.log(struct.clone())
+```
+
+Direct property reads, `for...of`, `values()`, `entries()`, and `clone()`
+return detached copies of visible values. Mutating those returned values does
+not mutate the underlying replica state.
 
 ### Acknowledgements and garbage collection
 
@@ -153,116 +193,178 @@ type CounterStruct = {
   count: number
 }
 
-const left = new CRStruct<CounterStruct>({
+const alice = new CRStruct<CounterStruct>({
   title: '',
   count: 0,
 })
-const right = new CRStruct<CounterStruct>({
+const bob = new CRStruct<CounterStruct>({
   title: '',
   count: 0,
 })
 
-const frontiers: Array<CRStructAck<CounterStruct>> = []
+const frontiers = new Map<string, CRStructAck<CounterStruct>>()
 
-left.addEventListener(
-  'ack',
-  (event) => {
-    frontiers.push(event.detail)
-  },
-  { once: true }
-)
+alice.addEventListener('delta', (event) => {
+  bob.merge(event.detail)
+})
 
-right.addEventListener(
-  'ack',
-  (event) => {
-    frontiers.push(event.detail)
-  },
-  { once: true }
-)
+bob.addEventListener('delta', (event) => {
+  alice.merge(event.detail)
+})
 
-left.acknowledge()
-right.acknowledge()
+alice.addEventListener('ack', (event) => {
+  frontiers.set('alice', event.detail)
+})
 
-left.garbageCollect(frontiers)
-right.garbageCollect(frontiers)
+bob.addEventListener('ack', (event) => {
+  frontiers.set('bob', event.detail)
+})
+
+alice.title = 'x'
+alice.title = 'y'
+delete alice.title
+
+alice.acknowledge()
+bob.acknowledge()
+
+alice.garbageCollect([...frontiers.values()])
+bob.garbageCollect([...frontiers.values()])
 ```
+
+### Advanced exports
+
+If you need to build your own fixed-key CRDT binding instead of using the
+high-level `CRStruct` class, the package also exports the core CRUD and MAGS
+functions together with the replica and payload types.
+
+Those low-level exports let you build custom struct abstractions, protocol
+wrappers, or framework-specific bindings while preserving the same convergence
+rules as the default `CRStruct` binding.
+
+```ts
+import {
+  __create,
+  __update,
+  __merge,
+  __snapshot,
+  type CRStructDelta,
+  type CRStructSnapshot,
+} from '@sovereignbase/convergent-replicated-struct'
+
+type DraftStruct = {
+  title: string
+  count: number
+}
+
+const defaults: DraftStruct = {
+  title: '',
+  count: 0,
+}
+
+const replica = __create(defaults)
+const local = __update('title', 'draft', replica)
+
+if (local) {
+  const outgoing: CRStructDelta<DraftStruct> = local.delta
+  const remoteChange = __merge(outgoing, replica)
+
+  console.log(remoteChange)
+}
+
+const snapshot: CRStructSnapshot<DraftStruct> = __snapshot(replica)
+console.log(snapshot)
+```
+
+The intended split is:
+
+- `__create`, `__read`, `__update`, `__delete` for local replica mutations.
+- `__merge`, `__acknowledge`, `__garbageCollect`, `__snapshot` for gossip,
+  compaction, and serialization.
+- `CRStruct` when you want the default event-driven class API.
 
 ## Runtime behavior
 
 ### Validation and errors
 
-Local API misuse throws `CRStructError` with stable error codes:
+Low-level exports can throw `CRStructError` with stable error codes:
 
 - `DEFAULTS_NOT_CLONEABLE`
 - `VALUE_NOT_CLONEABLE`
 - `VALUE_TYPE_MISMATCH`
 
-Hydration and merge are ingress-tolerant: malformed top-level payloads, unknown keys, malformed field entries, invalid UUIDs, invalid overwrite members, and mismatched runtime kinds are ignored instead of throwing.
+Ingress stays tolerant:
+
+- malformed top-level merge payloads are ignored
+- malformed snapshot values are dropped during hydration
+- unknown keys are ignored
+- invalid UUIDs and malformed field entries are ignored
+- mismatched runtime kinds do not break live-state convergence
 
 ### Safety and copying semantics
 
-- Constructor defaults must be `structuredClone`-compatible.
-- `read()`, `values()`, and `entries()` return detached clones.
-- `delta`, `change`, and `snapshot` event payloads are detached from live state.
-- `update()` stores a cloned value, so later caller-side mutation does not mutate replica state through shared references.
+- Snapshots are serializable full-state payloads keyed by field name.
+- Deltas are serializable gossip payloads keyed by field name.
+- `change` is a minimal field-keyed visible patch.
+- `toJSON()` returns a detached serializable snapshot.
+- Direct property reads, `for...of`, `values()`, `entries()`, and `clone()`
+  expose detached copies of visible values rather than mutable references into
+  replica state.
+- Property assignment, `delete`, `clear()`, `merge()`, `snapshot()`,
+  `acknowledge()`, and `garbageCollect()` all operate on the live struct
+  projection.
 
 ### Convergence and compaction
 
-- The convergence guarantee is the resolved live struct state.
-- Internal overwrite history may differ between replicas after acknowledgement-based garbage collection while the resolved live state still converges.
-- `garbageCollect()` compacts overwritten identifiers that are below the smallest acknowledgement frontier for a key while preserving the active predecessor link.
+- The convergence target is the live struct projection, not identical internal
+  tombstone sets.
+- Tombstones remain until acknowledgement frontiers make them safe to collect.
+- Garbage collection compacts overwritten identifiers below the smallest valid
+  acknowledgement frontier for a field while preserving the active predecessor
+  link.
+- Internal overwrite history may differ between replicas after
+  acknowledgement-based garbage collection while the resolved live struct still
+  converges.
 
 ## Tests
 
-- Suite: unit, integration, and end-to-end runtime tests.
-- Node test runner: `node --test` for unit and integration suites.
-- Coverage: `c8` with 100% statements / branches / functions / lines on built `dist/**/*.js`.
-- E2E runtimes: Node ESM, Node CJS, Bun ESM, Bun CJS, Deno ESM, Cloudflare Workers ESM, Edge Runtime ESM.
-- Browser E2E: Chromium, Firefox, WebKit, mobile Chrome, mobile Safari via Playwright.
-- Current status: `npm run test` passes on Node 22.14.0 (`win32 x64`).
+```sh
+npm run test
+```
+
+What the current test suite covers:
+
+- Coverage on built `dist/**/*.js` via `c8`.
+- Public `CRStruct` surface: proxy property access, deletes, `clear()`,
+  iteration, events, and JSON / inspect behavior.
+- Core edge paths and hostile ingress handling for `__create`, `__read`,
+  `__update`, `__delete`, `__merge`, `__snapshot`, `__acknowledge`, and
+  `__garbageCollect`.
+- Snapshot hydration independent of field order, acknowledgement and garbage
+  collection recovery, and deterministic multi-replica gossip scenarios.
+- End-to-end runtime matrix for:
+  - Node ESM
+  - Node CJS
+  - Bun ESM
+  - Bun CJS
+  - Deno ESM
+  - Cloudflare Workers ESM
+  - Edge Runtime ESM
+  - Browsers via Playwright: Chromium, Firefox, WebKit, mobile Chrome, mobile Safari
 
 ## Benchmarks
 
-How it was run:
-
 ```sh
-node benchmark/bench.js
+npm run bench
 ```
 
-Environment: Node 22.14.0 (`win32 x64`)
+The benchmark runner currently uses:
 
-| Benchmark                     | Result                    |
-| ----------------------------- | ------------------------- |
-| constructor empty             | 44,359 ops/s (2254.3 ms)  |
-| constructor hydrate x64       | 19,610 ops/s (255.0 ms)   |
-| constructor hydrate x256      | 8,088 ops/s (247.3 ms)    |
-| constructor hydrate x1024     | 1,724 ops/s (290.0 ms)    |
-| create() empty                | 49,874 ops/s (2005.1 ms)  |
-| create() hydrate x256         | 6,886 ops/s (290.4 ms)    |
-| read primitive                | 846,289 ops/s (236.3 ms)  |
-| read object                   | 298,983 ops/s (668.9 ms)  |
-| read array                    | 278,710 ops/s (717.6 ms)  |
-| keys()                        | 32,349,896 ops/s (6.2 ms) |
-| values()                      | 103,489 ops/s (966.3 ms)  |
-| entries()                     | 110,300 ops/s (906.6 ms)  |
-| snapshot()                    | 65,513 ops/s (305.3 ms)   |
-| acknowledge()                 | 536,890 ops/s (93.1 ms)   |
-| update string                 | 29,547 ops/s (1692.2 ms)  |
-| update number                 | 30,591 ops/s (1634.5 ms)  |
-| update object                 | 22,114 ops/s (2261.0 ms)  |
-| update array                  | 24,763 ops/s (2019.1 ms)  |
-| delete(key)                   | 8,352 ops/s (5986.8 ms)   |
-| delete() reset all            | 6,836 ops/s (2925.5 ms)   |
-| merge direct successor        | 32,541 ops/s (1536.5 ms)  |
-| merge stale conflict          | 30,995 ops/s (645.3 ms)   |
-| merge hydrate snapshot x256   | 5,748 ops/s (869.9 ms)    |
-| merge noop duplicate          | 7,576 ops/s (6600.1 ms)   |
-| garbageCollect() x512 history | 3,111 ops/s (1607.0 ms)   |
-| add/remove listener roundtrip | 49,005 ops/s (4081.2 ms)  |
-| update with listeners         | 25,120 ops/s (1194.3 ms)  |
-| merge with listeners          | 31,649 ops/s (631.9 ms)   |
+- `HISTORY_DEPTH = 5_000`
+- grouped scenarios for `crud`, `mags`, and `class`
+- output columns: `group`, `scenario`, `n`, `ops`, `ms`, `ms/op`, `ops/sec`
 
-Results vary by machine, runtime version, and payload shape.
+Run it locally to get machine-specific results for your current Node version,
+platform, and architecture.
 
 ## License
 
