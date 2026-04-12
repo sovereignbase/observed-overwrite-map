@@ -13,7 +13,26 @@ import {
 /**
  * Merges an incoming delta into the current replica.
  *
- * @param replica - The incoming partial snapshot projection to merge.
+ * Unknown fields and invalid snapshot entries are ignored. Accepted candidates
+ * extend local tombstone knowledge, may advance the current winning value, and
+ * may emit a return delta when the local state already dominates the incoming
+ * entry.
+ *
+ * @param crStructDelta - The incoming partial snapshot projection to merge.
+ * @param crStructReplica - The local replica state to merge into.
+ *
+ * @returns
+ * The visible change projection and reply delta, or `false` when the input is
+ * invalid or produces no outbound effect.
+ *
+ * Time complexity: O(d + l + i + c), worst case O(d + l + i + c)
+ *
+ * d = incoming delta field count
+ * l = local tombstone count processed across touched fields
+ * i = incoming tombstone count processed across accepted delta entries
+ * c = cloned and serialized payload size across emitted changes and reply deltas
+ *
+ * Space complexity: O(d + l + c)
  */
 export function __merge<T extends Record<string, unknown>>(
   crStructDelta: CRStructDelta<T>,

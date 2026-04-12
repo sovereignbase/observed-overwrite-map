@@ -5,6 +5,21 @@ import type {
 } from '../../../.types/index.js'
 /**
  * Emits the current acknowledgement frontier for each field.
+ *
+ * Each field reports the largest tombstone identifier currently known for that
+ * field.
+ *
+ * @param crStructReplica - The replica state to summarize.
+ *
+ * @returns
+ * An acknowledgement frontier keyed by field name.
+ *
+ * Time complexity: O(k + t), worst case O(k + t)
+ *
+ * k = replica field count
+ * t = total tombstone count across all fields
+ *
+ * Space complexity: O(k)
  */
 export function __acknowledge<T extends Record<string, unknown>>(
   crStructReplica: CRStructState<T>

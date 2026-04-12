@@ -8,6 +8,31 @@ import { CRStructError } from '../../../.errors/class.js'
 import { parseSnapshotEntryToStateEntry } from '../../../.helpers/parseSnapshotEntryToStateEntry/index.js'
 import { v7 as uuidv7 } from 'uuid'
 
+/**
+ * Creates internal CR-Struct state from default values and an optional snapshot.
+ *
+ * Default values define the replica field set. Compatible snapshot entries are
+ * parsed into live state entries, and invalid snapshot entries are ignored so
+ * the corresponding field falls back to a freshly initialized default-backed
+ * entry.
+ *
+ * @param defaults - Default field values that define the replica shape.
+ * @param snapshot - Optional serialized state used to hydrate matching fields.
+ *
+ * @returns
+ * A hydrated internal CR-Struct state object.
+ *
+ * @throws {CRStructError} Thrown when the default values are not supported by `structuredClone`.
+ *
+ * Time complexity: O(k + c + s + t), worst case O(k + c + s + t)
+ *
+ * k = default field count
+ * c = total cloned payload size across defaults and accepted snapshot values
+ * s = snapshot entries inspected for matching fields
+ * t = tombstone count materialized for accepted snapshot entries
+ *
+ * Space complexity: O(k + c + t)
+ */
 export function __create<T extends Record<string, unknown>>(
   defaults: T,
   snapshot?: CRStructSnapshot<T>

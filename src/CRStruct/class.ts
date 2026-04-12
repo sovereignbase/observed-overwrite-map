@@ -18,7 +18,7 @@ import { __create, __read, __update, __delete } from '../core/crud/index.js'
 /**
  * Runtime implementation for a proxy-backed CR-Struct replica.
  */
-export class CRStruct<T extends Record<string, unknown>> {
+class CRStructRaw<T extends Record<string, unknown>> {
   declare private readonly state: CRStructState<T>
   declare private readonly eventTarget: EventTarget
 
@@ -310,4 +310,13 @@ export class CRStruct<T extends Record<string, unknown>> {
       options
     )
   }
+}
+
+export type CRStruct<T extends Record<string, unknown>> = CRStructRaw<T> & T
+
+export const CRStruct = CRStructRaw as {
+  new <T extends Record<string, unknown>>(
+    defaults: T,
+    snapshot?: CRStructSnapshot<T>
+  ): CRStruct<T>
 }
