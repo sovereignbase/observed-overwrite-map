@@ -28,7 +28,7 @@ export function __snapshot<T extends Record<string, unknown>>(
 ): CRStructSnapshot<T> {
   const snapshot = {} as CRStructSnapshot<T>
 
-  for (const [key, value] of Object.entries(crStructReplica)) {
+  for (const [key, value] of Object.entries(crStructReplica.entries)) {
     snapshot[key as keyof T] = parseStateEntryToSnapshotEntry(
       value as CRStructStateEntry<T[keyof T]>
     )

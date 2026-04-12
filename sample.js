@@ -1,6 +1,9 @@
 import { CRStruct } from './dist/index.js'
 
-const obj = new CRStruct({ givenName: '' })
+const obj = new CRStruct({
+  givenName: '',
+  nested: new CRStruct({ familyName: '' }).toJSON(),
+})
 
 obj.givenName = 'Jori'
 

@@ -51,7 +51,7 @@ export function __create<T extends Record<string, unknown>>(
   const snapshotIsObject = snapshot && prototype(snapshot) === 'record'
 
   for (const key of Object.keys(defaults)) {
-    const defaultValue = defaults[key as keyof T]
+    const defaultValue = copiedDefaults[key as keyof T]
     if (snapshotIsObject && Object.hasOwn(snapshot, key)) {
       const valid = parseSnapshotEntryToStateEntry(
         defaultValue,
