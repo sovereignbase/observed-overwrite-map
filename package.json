@@ -3,7 +3,7 @@
   "license": "Apache-2.0",
   "name": "@sovereignbase/convergent-replicated-struct",
   "version": "1.1.1",
-  "description": "Convergent Replicated Struct (CR-Struct), a delta CRDT for an fixed-key object structs.",
+  "description": "Convergent Replicated Struct (CR-Struct), a delta CRDT for fixed-key object structs.",
   "keywords": [
     "crdt",
     "struct",

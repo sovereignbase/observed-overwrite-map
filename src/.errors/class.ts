@@ -1,5 +1,5 @@
 /**
- * Error codes thrown by {@link OOStruct}.
+ * Error codes thrown by {@link CRStruct}.
  */
 export type CRStructErrorCode =
   | 'DEFAULTS_NOT_CLONEABLE'

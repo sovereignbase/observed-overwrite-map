@@ -26,7 +26,7 @@ export type CRStructStateEntry<V> = {
 }
 
 /**
- * Represents the internal replicated state of an OO-Struct replica.
+ * Represents the internal replicated state of a CR-Struct replica.
  */
 export type CRStructState<T extends Record<string, unknown>> = {
   entries: { [K in keyof T]: CRStructStateEntry<T[K]> }
@@ -96,7 +96,7 @@ export type CRStructAck<T extends Record<string, unknown>> = Partial<
 /***/
 
 /**
- * Maps OO-Struct event names to their event payload shapes.
+ * Maps CR-Struct event names to their event payload shapes.
  */
 export type CRStructEventMap<T extends Record<string, unknown>> = {
   /** STATE / PROJECTION */
@@ -109,7 +109,7 @@ export type CRStructEventMap<T extends Record<string, unknown>> = {
 }
 
 /**
- * Represents a strongly typed OO-Struct event listener.
+ * Represents a strongly typed CR-Struct event listener.
  */
 export type CRStructEventListener<
   T extends Record<string, unknown>,
