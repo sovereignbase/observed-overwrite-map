@@ -91,3 +91,27 @@ test('snapshot payloads are detached from live state', () => {
   assert.deepEqual(replica.tags, [])
   assert.equal(readSnapshot(replica).name.tombstones.length > 0, true)
 })
+
+test('change payloads are detached from live state across local write merge and reset flows', () => {
+  const local = createReplica()
+  const localChanges = []
+  local.addEventListener('change', (event) => {
+    localChanges.push(event.detail)
+  })
+
+  local.meta = { enabled: true }
+  localChanges[0].meta.enabled = false
+  assert.deepEqual(local.meta, { enabled: true })
+
+  const remote = createReplica(readSnapshot(local))
+  remote.meta = { enabled: false }
+  const incoming = readSnapshot(remote)
+  local.merge(incoming)
+
+  localChanges[1].meta.enabled = true
+  assert.deepEqual(local.meta, { enabled: false })
+
+  assert.equal(Reflect.deleteProperty(local, 'meta'), true)
+  localChanges[2].meta.enabled = true
+  assert.deepEqual(local.meta, { enabled: false })
+})
