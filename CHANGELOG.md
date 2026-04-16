@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.1.3...v1.1.4) (2026-04-16)
+
+
+### Bug Fixes
+
+* clarified documentation and other general fixes ([bfcf9c9](https://github.com/sovereignbase/convergent-replicated-struct/commit/bfcf9c93898c78f5a9a46bcaedef05cebec48127))
+
 ## [1.1.3](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.1.2...v1.1.3) (2026-04-14)
 
 
