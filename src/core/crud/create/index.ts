@@ -17,7 +17,7 @@ import { v7 as uuidv7 } from 'uuid'
  * entry.
  *
  * @param defaults - Default field values that define the replica shape.
- * @param snapshot - Optional serialized state used to hydrate matching fields.
+ * @param snapshot - Optional serializable snapshot used to hydrate matching fields.
  *
  * @returns
  * A hydrated internal CR-Struct state object.

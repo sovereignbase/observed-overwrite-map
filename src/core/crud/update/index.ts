@@ -19,15 +19,15 @@ import { overwriteAndReturnSnapshotEntry } from '../../../.helpers/index.js'
  * @param crStructReplica - The replica state that owns the field.
  *
  * @returns
- * The visible change projection and serialized delta for the overwrite.
+ * The visible change projection and serializable delta for the overwrite.
  *
  * @throws {CRStructError} Thrown when the value is not supported by `structuredClone`.
  * @throws {CRStructError} Thrown when the value runtime type does not match the default value runtime type.
  *
  * Time complexity: O(c + t), worst case O(c + t)
  *
- * c = cloned and serialized payload size for the updated value
- * t = tombstone count serialized for the target field
+ * c = cloned payload size across the updated value and emitted delta entry
+ * t = tombstone count copied into the emitted delta entry
  *
  * Space complexity: O(c + t)
  */

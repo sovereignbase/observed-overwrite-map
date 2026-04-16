@@ -30,7 +30,7 @@ import {
  * d = incoming delta field count
  * l = local tombstone count processed across touched fields
  * i = incoming tombstone count processed across accepted delta entries
- * c = cloned and serialized payload size across emitted changes and reply deltas
+ * c = cloned payload size across emitted changes and reply delta entries
  *
  * Space complexity: O(d + l + c)
  */

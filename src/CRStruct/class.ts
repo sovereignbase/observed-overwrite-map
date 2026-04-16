@@ -30,7 +30,7 @@ class CRStructRaw<T extends Record<string, unknown>> {
    * proxy exposes those fields as direct properties on the instance.
    *
    * @param defaults - The default field values that define the struct shape.
-   * @param snapshot - An optional serialized snapshot used to hydrate the replica.
+   * @param snapshot - An optional serializable snapshot used to hydrate the replica.
    * @throws {CRStructError} Thrown when the default values are not supported by `structuredClone`.
    */
   constructor(defaults: T, snapshot?: CRStructSnapshot<T>) {
@@ -127,7 +127,7 @@ class CRStructRaw<T extends Record<string, unknown>> {
   /**
    * Applies a remote or local delta to the replica state.
    *
-   * @param crStructDelta - The partial serialized field state to merge.
+   * @param crStructDelta - The partial serializable field delta to merge.
    */
   merge(crStructDelta: CRStructDelta<T>): void {
     const result = __merge<T>(crStructDelta, this.__state)
@@ -167,7 +167,7 @@ class CRStructRaw<T extends Record<string, unknown>> {
   }
 
   /**
-   * Emits a serialized snapshot of the current replica state.
+   * Emits the current serializable snapshot of the replica state.
    */
   snapshot(): void {
     const snapshot = __snapshot<T>(this.__state)
@@ -244,7 +244,7 @@ class CRStructRaw<T extends Record<string, unknown>> {
   }
 
   /**
-   * Returns a serializable snapshot representation of this replica.
+   * Returns the current serializable snapshot projection of this replica.
    *
    * Called automatically by `JSON.stringify`.
    */
@@ -252,7 +252,7 @@ class CRStructRaw<T extends Record<string, unknown>> {
     return __snapshot<T>(this.__state)
   }
   /**
-   * Returns this replica as a JSON string.
+   * Attempts to return the current snapshot as a serialized JSON string.
    */
   toString(): string {
     return JSON.stringify(this)

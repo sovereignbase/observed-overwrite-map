@@ -9,20 +9,20 @@ import type {
  * Resets one field or the entire struct back to default values.
  *
  * Each touched field is overwritten from the replica defaults and contributes a
- * visible change projection plus a serialized delta describing the reset.
+ * visible change projection plus a serializable delta describing the reset.
  *
  * @param crStructReplica - The replica state to reset.
  * @param key - The optional field key to reset. When omitted, every field is reset.
  *
  * @returns
- * The visible change projection and serialized delta for the reset, or `false`
+ * The visible change projection and serializable delta for the reset, or `false`
  * when a keyed reset targets a field outside the replica.
  *
  * Time complexity: O(k + c + t), worst case O(k + c + t)
  *
  * k = number of fields being reset
- * c = cloned and serialized payload size across reset field values
- * t = tombstone count serialized across reset fields
+ * c = cloned payload size across reset field values and emitted delta entries
+ * t = tombstone count copied into emitted delta entries
  *
  * Space complexity: O(k + c + t)
  */

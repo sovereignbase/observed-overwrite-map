@@ -363,8 +363,9 @@
         version 7 as defined by [[RFC9562]].
       </p>
       <p>
-        A <dfn>serializable object</dfn> is an object that supports being
-        serialized, and later deserialized as defined by [[HTML]].
+        A <dfn>serializable object</dfn> is an object that supports structured
+        serialization and later structured deserialization as defined by
+        [[HTML]].
       </p>
       <p>
         A <dfn>field key</dfn> is one own property name present in the replica's
@@ -394,8 +395,8 @@
         largest retained <a>field tombstone</a> under lexicographic comparison.
       </p>
       <p>
-        A <dfn>snapshot</dfn> is a full <a>serializable object</a> presentation
-        of the current <a>CR-Struct replica</a>.
+        A <dfn>snapshot</dfn> is the full <a>serializable object</a> form of
+        the current <a>CR-Struct replica</a>.
       </p>
       <p>
         A <dfn>delta</dfn> is a partial <a>snapshot</a> containing only the
@@ -443,7 +444,7 @@
       <h2>Data Structure</h2>
       <p>
         The same logical replica can be viewed through three useful
-        representations: the serializable snapshot used for transport and
+        representations: the serializable snapshot form used for transport and
         storage, one possible runtime projection used internally by a binding,
         and the final consumer-facing visible object.
       </p>
