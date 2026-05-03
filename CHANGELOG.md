@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.1.5...v1.2.0) (2026-05-03)
+
+
+### Features
+
+* add allowMissing flag & add typedoc ([0ef3864](https://github.com/sovereignbase/convergent-replicated-struct/commit/0ef3864a9f4e6ede654fc4933680425eeedc07e1))
+* remove messy overload & add clean type inference ([d1d0609](https://github.com/sovereignbase/convergent-replicated-struct/commit/d1d0609194e7d47b7821a6bc501d8494856e775f))
+
 ## [1.1.5](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.1.4...v1.1.5) (2026-04-25)
 
 
