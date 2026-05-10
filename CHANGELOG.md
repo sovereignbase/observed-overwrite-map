@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.2.1...v1.2.2) (2026-05-10)
+
+
+### Bug Fixes
+
+* bumb dependencies ([2d6d9ab](https://github.com/sovereignbase/convergent-replicated-struct/commit/2d6d9ab541408c895f289b82602504912336ee0a))
+
 ## [1.2.1](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.2.0...v1.2.1) (2026-05-03)
 
 
