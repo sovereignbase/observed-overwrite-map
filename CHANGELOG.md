@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.2.2...v1.2.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* materialize missing allowMissing entries on write and merge ([00d1088](https://github.com/sovereignbase/convergent-replicated-struct/commit/00d1088f413c3b2dde0362e937610248bad22108))
+
 ## [1.2.2](https://github.com/sovereignbase/convergent-replicated-struct/compare/v1.2.1...v1.2.2) (2026-05-10)
 
 
