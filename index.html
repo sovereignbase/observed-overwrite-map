@@ -395,8 +395,8 @@
         largest retained <a>field tombstone</a> under lexicographic comparison.
       </p>
       <p>
-        A <dfn>snapshot</dfn> is the full <a>serializable object</a> form of the
-        current <a>CR-Struct replica</a>.
+        A <dfn>snapshot</dfn> is the <a>serializable object</a> form of the
+        materialized field entries in the current <a>CR-Struct replica</a>.
       </p>
       <p>
         A <dfn>delta</dfn> is a partial <a>snapshot</a> containing only the
@@ -408,9 +408,9 @@
       <h2>Core Model</h2>
       <p>
         A <a>CR-Struct replica</a> consists of a fixed set of
-        <a>field key</a>(s) defined at construction time. Each key stores
-        exactly one current visible <a>field value</a>, one current winning
-        <a>UUIDv7 identifier</a>, one current winning
+        <a>field key</a>(s) defined at construction time. Each materialized key
+        stores exactly one current visible <a>field value</a>, one current
+        winning <a>UUIDv7 identifier</a>, one current winning
         <a>predecessor identifier</a>, and a set of retained
         <a>field tombstone</a>(s).
       </p>
@@ -419,6 +419,12 @@
         implementation MUST ignore unknown keys arriving from snapshots, deltas,
         and acknowledgement frontiers, and MUST preserve only keys present in
         the default object supplied at construction time.
+      </p>
+      <p>
+        A binding MAY support an allow-missing construction mode. In that mode,
+        known field keys without valid snapshot entries remain unmaterialized
+        until a local overwrite or valid incoming merge materializes them.
+        Unmaterialized fields are omitted from snapshots.
       </p>
       <p>
         Each local overwrite produces a fresh winning
@@ -499,6 +505,10 @@
               is a record, otherwise false.
             </li>
             <li>
+              Let <var>allowMissing</var> be the supplied allow-missing flag, or
+              false if no flag was supplied.
+            </li>
+            <li>
               For each own <a>field key</a> of the original defaults object:
               <ol>
                 <li>
@@ -512,6 +522,10 @@
                   <a>transform a snapshot entry to a state entry</a> algorithm
                   against <var>defaultValue</var>, then store the minted entry
                   as the live field entry and continue to the next key.
+                </li>
+                <li>
+                  If <var>allowMissing</var> is true, then continue to the next
+                  key.
                 </li>
                 <li>
                   Otherwise mint one fresh root UUIDv7 and one fresh winning
@@ -545,8 +559,46 @@
         </section>
 
         <section>
+          <h4>Local Overwrite</h4>
+          <ol class="algorithm">
+            <li>
+              If no current local <a>field entry</a> exists for the supplied
+              key, mint one fresh root UUIDv7 and one fresh winning UUIDv7, then
+              store a field entry whose <code>uuidv7</code> is the fresh winning
+              UUIDv7, whose <code>predecessor</code> is the fresh root UUIDv7,
+              whose <code>value</code> is that key's default value, and whose
+              <code>tombstones</code> set initially contains only the fresh root
+              UUIDv7.
+            </li>
+            <li>
+              Let <var>target</var> be the current local field entry for the
+              supplied key.
+            </li>
+            <li>
+              Let <var>oldUuidv7</var> be <var>target</var>'s current
+              <code>uuidv7</code>.
+            </li>
+            <li>
+              Replace <var>target</var>'s <code>uuidv7</code> with a fresh
+              UUIDv7, replace its <code>value</code> with the supplied value,
+              replace its <code>predecessor</code> with <var>oldUuidv7</var>,
+              and add <var>oldUuidv7</var> to its tombstones.
+            </li>
+            <li>
+              Return the result of running
+              <a>transform a state entry to a snapshot entry</a> on
+              <var>target</var>.
+            </li>
+          </ol>
+        </section>
+
+        <section>
           <h4>Update</h4>
           <ol class="algorithm">
+            <li>
+              If the supplied key is not a known <a>field key</a>, then return
+              no change.
+            </li>
             <li>
               Attempt to copy the supplied value with
               <code>structuredClone</code>. If copying fails, then fail.
@@ -620,6 +672,11 @@
                 <li>
                   Let <var>target</var> be the current local field entry for
                   that key.
+                </li>
+                <li>
+                  If <var>target</var> does not exist, store the candidate entry
+                  as the current local field entry, record the visible field
+                  change, and continue.
                 </li>
                 <li>
                   Let <var>current</var> be a shallow copy of <var>target</var>.
@@ -790,7 +847,8 @@
               <a>transform a state entry to a snapshot entry</a> algorithm.
             </li>
             <li>
-              Store each shed field entry in the result under its field key.
+              Store each serialized field entry in the result under its field
+              key.
             </li>
             <li>Return the resulting <a>snapshot</a>.</li>
           </ol>
@@ -810,7 +868,11 @@
         <pre class="idl">
 [Exposed=*]
 interface CRStruct {
-  constructor(object defaults, optional object snapshot = {});
+  constructor(
+    object defaults,
+    optional object snapshot = {},
+    optional boolean allowMissing = false
+  );
   undefined merge(optional object delta = {});
   undefined acknowledge();
   undefined garbageCollect(sequence&lt;object&gt; frontiers);
@@ -853,6 +915,8 @@ typedef record&lt;DOMString, DOMString&gt; CRStructAck;
           a detached copy of the current value for that field. Writing
           <code>struct.key = value</code> performs a local overwrite, and
           <code>delete struct.key</code> resets that field to its default value.
+          In allow-missing mode, reading a known field that has not yet been
+          materialized returns <code>undefined</code>.
         </p>
         <p>
           Only keys present in the constructor's defaults object participate in
@@ -866,6 +930,12 @@ typedef record&lt;DOMString, DOMString&gt; CRStructAck;
           behavior. The expected object shapes are
           <code>CRStructSnapshot</code> and <code>CRStructDelta</code> as
           defined by the declarations above.
+        </p>
+        <p>
+          When the constructor's <code>allowMissing</code> argument is true,
+          missing or invalid snapshot entries remain absent instead of being
+          initialized from defaults. Direct writes and valid merges materialize
+          those absent known fields.
         </p>
         <p>
           When the current <a>snapshot</a> is JSON-compatible,
@@ -1028,7 +1098,9 @@ typedef record&lt;DOMString, DOMString&gt; CRStructAck;
           <p>
             Construct a new binding whose internal state is the result of the
             core create algorithm applied to the supplied defaults object and
-            optional <a>snapshot</a>.
+            optional <a>snapshot</a>. If <code>allowMissing</code> is true,
+            missing or invalid snapshot entries remain absent until first local
+            write or valid merge.
           </p>
         </section>
 
@@ -1039,7 +1111,8 @@ typedef record&lt;DOMString, DOMString&gt; CRStructAck;
             <a>field value</a> copy for that key. Writing
             <code>struct.key = value</code> runs a one-field local overwrite.
             Deleting <code>delete struct.key</code> resets that field to its
-            default value.
+            default value. A known unmaterialized key reads as
+            <code>undefined</code>.
           </p>
         </section>
 

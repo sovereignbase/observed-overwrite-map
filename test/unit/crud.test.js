@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { CRStruct } from '../../dist/index.js'
 import {
   assertCRStructError,
   assertSnapshotShape,
   captureEvents,
+  createDefaults,
   createReplica,
   readSnapshot,
   readState,
@@ -54,6 +56,23 @@ test('property writes emit detached delta and change payloads', () => {
   events.change[0].meta.enabled = false
 
   assert.deepEqual(replica.meta, { enabled: true })
+})
+
+test('property writes materialize missing allowMissing entries', () => {
+  const replica = new CRStruct(createDefaults(), undefined, true)
+  const { events } = captureEvents(replica)
+
+  assert.equal(replica.name, undefined)
+  assert.equal(
+    Object.getOwnPropertyDescriptor(replica, 'name').value,
+    undefined
+  )
+  assert.equal(Reflect.set(replica, 'name', 'alice'), true)
+
+  assert.equal(replica.name, 'alice')
+  assert.deepEqual(events.change[0], { name: 'alice' })
+  assert.equal(events.delta.length, 1)
+  assert.deepEqual(Object.keys(readSnapshot(replica)), ['name'])
 })
 
 test('delete resets a single field and clear resets the whole struct', () => {

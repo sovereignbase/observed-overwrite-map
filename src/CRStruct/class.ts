@@ -27,10 +27,13 @@ class CRStructRaw<T extends Record<string, unknown>> {
    * Creates a replica from default values and an optional snapshot.
    *
    * The struct shape is fixed by the provided default values. The returned
-   * proxy exposes those fields as direct properties on the instance.
+   * proxy exposes those fields as direct properties on the instance. When
+   * `allowMissing` is true, fields without valid snapshot entries remain
+   * unmaterialized until first written locally or merged from valid ingress.
    *
    * @param defaults - The default field values that define the struct shape.
    * @param snapshot - An optional serializable snapshot used to hydrate the replica.
+   * @param allowMissing - Whether missing or invalid snapshot entries should remain absent instead of falling back to defaults.
    * @throws {CRStructError} Thrown when the default values are not supported by `structuredClone`.
    */
   constructor(

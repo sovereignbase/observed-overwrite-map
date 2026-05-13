@@ -135,6 +135,29 @@ For general `structuredClone`-compatible values such as `Date`, `Map`, or
 `BigInt`, persist snapshots with a structured-clone-capable store or an
 application-level codec instead of plain `JSON.stringify` / `JSON.parse`.
 
+By default, every default key is materialized as a snapshot entry during
+construction. Pass `true` as the third constructor argument when hydrating from
+a partial snapshot and you want missing or invalid field entries to stay absent
+instead of falling back to default values:
+
+```ts
+const partial = new CRStruct<DraftStruct>(
+  { title: '', count: 0 },
+  undefined,
+  true
+)
+
+console.log(partial.title) // undefined
+
+partial.title = 'draft'
+
+console.log(partial.toJSON()) // { title: ... }
+```
+
+In `allowMissing` mode, a known field is materialized by the first valid local
+write or by merging a valid snapshot entry for that field. Snapshots only
+include fields that currently have materialized entries.
+
 ### Event channels
 
 ```ts
@@ -294,6 +317,11 @@ The intended split is:
 - `__merge`, `__acknowledge`, `__garbageCollect`, `__snapshot` for gossip,
   compaction, and serialization.
 - `CRStruct` when you want the default event-driven class API.
+
+`__create(defaults, snapshot, true)` mirrors the class `allowMissing` mode:
+missing or invalid snapshot entries remain absent, `__update` materializes a
+known absent field before writing, and `__merge` materializes a known absent
+field from valid ingress.
 
 ## Runtime behavior
 

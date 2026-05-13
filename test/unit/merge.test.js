@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { CRStruct } from '../../dist/index.js'
 import {
   captureEvents,
   cloneSnapshot,
+  createDefaults,
   createReplica,
   createValidUuid,
   normalizeSnapshot,
@@ -75,6 +77,21 @@ test('merge adopts a direct successor and emits change', () => {
 
   const targetEvents = captureEvents(target)
   target.merge(delta)
+
+  assert.equal(target.name, 'alice')
+  assert.equal(targetEvents.events.delta.length, 0)
+  assert.equal(targetEvents.events.change.length, 1)
+  assert.deepEqual(targetEvents.events.change[0], { name: 'alice' })
+})
+
+test('merge materializes missing allowMissing entries from valid ingress', () => {
+  const source = createReplica()
+  source.name = 'alice'
+  const target = new CRStruct(createDefaults(), undefined, true)
+  const targetEvents = captureEvents(target)
+
+  assert.equal(target.name, undefined)
+  target.merge({ name: readSnapshot(source).name })
 
   assert.equal(target.name, 'alice')
   assert.equal(targetEvents.events.delta.length, 0)

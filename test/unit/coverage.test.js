@@ -48,6 +48,7 @@ test('core export surface and raw state operations remain coherent', () => {
   assert.deepEqual(update.change, { name: 'alice' })
   assert.deepEqual(Object.keys(update.delta), ['name'])
   assert.equal(__read('name', state), 'alice')
+  assert.equal(__update('ghost', undefined, state), false)
 
   const singleDelete = __delete(state, 'name')
   assert.deepEqual(singleDelete.change, { name: '' })

@@ -14,9 +14,9 @@ import {
  * Merges an incoming delta into the current replica.
  *
  * Unknown fields and invalid snapshot entries are ignored. Accepted candidates
- * extend local tombstone knowledge, may advance the current winning value, and
- * may emit a return delta when the local state already dominates the incoming
- * entry.
+ * materialize missing local entries, extend local tombstone knowledge, may
+ * advance the current winning value, and may emit a return delta when the local
+ * state already dominates the incoming entry.
  *
  * @param crStructDelta - The incoming partial snapshot projection to merge.
  * @param crStructReplica - The local replica state to merge into.
@@ -62,6 +62,12 @@ export function __merge<T extends Record<string, unknown>>(
     const target = crStructReplica.entries[key] as CRStructStateEntry<
       T[keyof T]
     >
+    if (!target) {
+      crStructReplica.entries[key as keyof T] = candidate
+      change[key as keyof T] = structuredClone(candidate.value)
+      hasChange = true
+      continue
+    }
     const current = { ...target }
     let frontier = ''
     for (const overwrite of target.tombstones) {

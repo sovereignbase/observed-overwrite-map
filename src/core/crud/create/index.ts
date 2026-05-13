@@ -12,12 +12,12 @@ import { v7 as uuidv7 } from 'uuid'
  * Creates internal CR-Struct state from default values and an optional snapshot.
  *
  * Default values define the replica field set. Compatible snapshot entries are
- * parsed into live state entries, and invalid snapshot entries are ignored so
- * the corresponding field falls back to a freshly initialized default-backed
- * entry.
+ * parsed into live state entries. Missing or invalid snapshot entries fall back
+ * to freshly initialized default-backed entries unless `allowMissing` is true.
  *
  * @param defaults - Default field values that define the replica shape.
  * @param snapshot - Optional serializable snapshot used to hydrate matching fields.
+ * @param allowMissing - Whether missing or invalid snapshot entries should remain absent instead of falling back to defaults.
  *
  * @returns
  * A hydrated internal CR-Struct state object.

@@ -6,6 +6,8 @@ import { transformStateEntryToSnapshotEntry } from '../index.js'
 import { v7 as uuidv7 } from 'uuid'
 /**
  * Overwrites a field and returns the serialized delta entry for that overwrite.
+ * Missing field entries are initialized from defaults before applying the
+ * overwrite.
  *
  * @param key - The field key to overwrite.
  * @param value - The next value for the field.
@@ -18,7 +20,16 @@ export function overwriteAndReturnSnapshotEntry<
   value: T[keyof T],
   crStructReplica: CRStructState<T>
 ): CRStructSnapshotEntry<T[keyof T]> {
-  const target = crStructReplica.entries[key]
+  let target = crStructReplica.entries[key]
+  if (!target) {
+    const root = uuidv7()
+    target = crStructReplica.entries[key] = {
+      uuidv7: uuidv7(),
+      predecessor: root,
+      value: crStructReplica.defaults[key],
+      tombstones: new Set([root]),
+    }
+  }
   const oldUuidv7 = target.uuidv7
   target.uuidv7 = uuidv7()
   target.value = value

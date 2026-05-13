@@ -12,14 +12,16 @@ import { overwriteAndReturnSnapshotEntry } from '../../../.helpers/index.js'
  *
  * The incoming value is cloned first, validated against the default field
  * runtime type, and then written back as the current winning value for the
- * target field.
+ * target field. If the field is valid but currently absent, the overwrite
+ * materializes it before writing.
  *
  * @param key - The field key to overwrite.
  * @param value - The next value for the field.
  * @param crStructReplica - The replica state that owns the field.
  *
  * @returns
- * The visible change projection and serializable delta for the overwrite.
+ * The visible change projection and serializable delta for the overwrite, or
+ * `false` when the key is outside the replica shape.
  *
  * @throws {CRStructError} Thrown when the value is not supported by `structuredClone`.
  * @throws {CRStructError} Thrown when the value runtime type does not match the default value runtime type.
@@ -36,6 +38,8 @@ export function __update<T extends Record<string, unknown>>(
   value: T[keyof T],
   crStructReplica: CRStructState<T>
 ): { change: CRStructChange<T>; delta: CRStructDelta<T> } | false {
+  if (!Object.hasOwn(crStructReplica.defaults, key)) return false
+
   const [cloned, copiedValue] = safeStructuredClone(value)
   if (!cloned)
     throw new CRStructError(
